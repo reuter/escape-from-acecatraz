@@ -190,3 +190,10 @@ aside { position: sticky; top: 12px; min-width: 0; }
 .dialog.help .box p { color: var(--ink); font-weight: 500; }
 .dialog.help .hero p { color: #fff; }
 .dialog.help .hero { padding-block: 16px; }
+
+.demo { display: inline-block; font-size: 11px; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; background: var(--amber); color: #3d2a00; border-radius: 999px; padding: 3px 10px; box-shadow: 0 2px 0 #b97a00; font-style: normal; transform: none; }
+.bar h1 .demo { align-self: center; }
+.demobadge { display: inline-block; justify-self: center; background: var(--amber); color: #3d2a00 !important; font-weight: 800 !important; font-size: 12px; letter-spacing: .06em; border-radius: 999px; padding: 4px 14px; box-shadow: 0 2px 0 #b97a00; }
+footer.site { max-width: 1280px; margin: 22px auto 8px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; background: var(--panel); border: 2px solid var(--line); border-radius: 14px; font-size: 13px; font-weight: 600; color: var(--muted); }
+footer.site a { color: var(--green); font-weight: 800; }
+.hero p.demobadge { width: fit-content; max-width: 100%; border-radius: 14px; text-align: center; }

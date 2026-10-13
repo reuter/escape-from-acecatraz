@@ -81,7 +81,7 @@ function headerHTML() {
       '<span class="chip">Patrol deck <b>' + G.patrol.length + '</b></span>' +
       '<span class="chip">Cleared <b>' + Math.min(G.cur, G.obstacles.length) + '/' + G.obstacles.length + '</b></span>';
   }
-  const bar = '<header class="bar"><h1>Escape from <span class="tag">Ace-catraz!</span></h1><span class="barbtns"><button class="btn sm" data-act="help">How to play</button> <button class="btn sm" data-act="newgame">New game</button></span></header>';
+  const bar = '<header class="bar"><h1>Escape from <span class="tag">Ace-catraz!</span><span class="demo">Demo</span></h1><span class="barbtns"><button class="btn sm" data-act="help">How to play</button> <button class="btn sm" data-act="newgame">New game</button></span></header>';
   if (!G) return bar;
   return bar + '<div class="sub"><div class="chips">' + chips + '</div><label class="check"><input type="checkbox" data-act="assist" ' + (ui.assist ? 'checked' : '') + '> Outline cards that match the active obstacle</label></div>';
 }
@@ -261,7 +261,7 @@ function dialogHTML() {
     return '<div class="overlay"><div class="dialog">' +
       '<div class="hero"><h2>Escape from <span class="tag">Ace-catraz!</span></h2><div class="fan">' + fan + '</div>' +
       '<div class="crew">' + [0, 1, 2, 3].map((k) => avatar(k, 44)).join('') + '</div>' +
-      '<p>You are Ace. You can see every crewmate’s cards but never your own.</p></div>' +
+      '<p>You are Ace. You can see every crewmate’s cards but never your own.</p><p class="demobadge">Playable demo · Feedback: Andy Serwatuk, games@serwatuk.ca</p></div>' +
       '<div class="box"><div class="field"><b>Crew size</b><div class="seg">' + segN + '</div><p class="note">' + obs + ' obstacles, ' + (ui.n - 1) + ' extra HARD card' + (ui.n > 2 ? 's' : '') + ' shuffled in</p></div>' +
       '<label class="check"><input type="checkbox" data-act="extra" ' + (ui.extra ? 'checked' : '') + '> Add one obstacle (harder, per the rules tip)</label>' +
       '<div class="field"><b>CPU speed</b><div class="seg">' + segS + '</div></div>' +
@@ -284,14 +284,19 @@ function dialogHTML() {
   return '';
 }
 
+const MAIL = 'games@serwatuk.ca';
+function footHTML() {
+  return '<footer class="site"><span class="demo">Demo</span><span>A playable demo of a cooperative card game in development. Feedback and playtest notes are very welcome: Andy Serwatuk, <a href="mailto:' + MAIL + '?subject=Escape%20from%20Ace-catraz%20feedback">' + MAIL + '</a></span></footer>';
+}
+
 function render() {
   const scroll = document.getElementById('log');
   const atBottom = !scroll || scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 30;
-  if (!G) { app.innerHTML = headerHTML() + dialogHTML(); return; }
+  if (!G) { app.innerHTML = headerHTML() + footHTML() + dialogHTML(); return; }
   const cpus = G.players.filter((p) => !p.human), me = G.players.filter((p) => p.human);
   app.innerHTML = headerHTML() + '<div class="wrap"><div class="main">' + planHTML() + tableHTML() + trayHTML() +
     '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats">' + cpus.map(seatHTML).join('') + '</div></section>' +
-    '<section class="panel"><h2>Your hand</h2><div class="seats">' + me.map(seatHTML).join('') + '</div>' + controlsHTML() + '</section></div>' + logHTML() + '</div>' + dialogHTML();
+    '<section class="panel"><h2>Your hand</h2><div class="seats">' + me.map(seatHTML).join('') + '</div>' + controlsHTML() + '</section></div>' + logHTML() + '</div>' + footHTML() + dialogHTML();
   const lg = document.getElementById('log');
   if (lg && atBottom) lg.scrollTop = lg.scrollHeight;
   const ack = document.querySelector('[data-act=ack]');
