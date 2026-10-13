@@ -3,7 +3,7 @@
 const A = window.Ace, CPU = window.AceCPU;
 const app = document.getElementById('app');
 let G = null, timer = null;
-const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, toast: '' };
+const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null };
 try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist']) if (k in s) ui[k] = s[k]; } catch (e) {}
 const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist })); } catch (e) {} };
 
@@ -200,6 +200,13 @@ function dialogHTML() {
       '<div class="field"><b>CPU speed</b><div class="seg">' + segS + '</div></div>' +
       '<button class="btn primary" data-act="start">Start the escape</button></div></div>';
   }
+  if (ui.notice) {
+    const n = ui.notice;
+    return '<div class="overlay"><div class="dialog notice"><h2>' + esc(n.name) + ' <span>planted</span> this card</h2>' +
+      '<div class="xlwrap">' + card(n.card, 'xl') + '</div>' +
+      '<p>Placed face-down at the active obstacle (' + esc(n.obs.name) + ': ' + esc(n.obs.text.toLowerCase()) + '). Once it is down, nobody can look at it again.</p>' +
+      '<button class="btn primary" data-act="ack">Got it</button></div></div>';
+  }
   if (G && G.result && !ui.endSeen) {
     const w = G.result.won;
     const done = Math.min(G.cur, G.obstacles.length);
@@ -220,13 +227,21 @@ function render() {
     '<section class="panel"><h2>Your hand</h2><div class="seats">' + me.map(seatHTML).join('') + '</div>' + controlsHTML() + '</section></div>' + logHTML() + '</div>' + dialogHTML();
   const lg = document.getElementById('log');
   if (lg && atBottom) lg.scrollTop = lg.scrollHeight;
+  const ack = document.querySelector('[data-act=ack]');
+  if (ack) ack.focus();
 }
 
 function doApply(a) {
   const O = A.active(G);
+  let notice = null;
+  if (a.type === 'plant') {
+    const pl = G.players[G.turn];
+    if (!pl.human && pl.hand[a.hand]) notice = { name: pl.name, card: pl.hand[a.hand].card, obs: O.sec };
+  }
   const before = a.type === 'breakthrough' && O ? O.planted.map((r) => ({ player: r.player, card: r.card })) : null;
   const r = A.apply(G, a);
   if (!r.ok) { console.warn(a, r.why); return r; }
+  if (notice) ui.notice = notice;
   ui.flash = a.type === 'hint' ? { to: a.to, hand: a.hand } : null;
   if (before) ui.reveal = { ok: G.lastBreak.ok, items: before };
   ui.sel = null; ui.hintSel = null; if (a.type === 'riotSwap') ui.swapA = null;
@@ -235,7 +250,7 @@ function doApply(a) {
 
 function schedule() {
   clearTimeout(timer);
-  if (!G || G.result || ui.dialog) return;
+  if (!G || G.result || ui.dialog || ui.notice) return;
   const p = G.players[G.turn];
   if (p.human) {
     if (G.phase === 'post' && !A.allPlanted(G)) timer = setTimeout(() => { doApply({ type: 'end' }); render(); schedule(); }, 1100);
@@ -252,7 +267,7 @@ function go(a) { const r = doApply(a); render(); schedule(); return r; }
 function startGame() {
   const human = [true, false, false, false];
   G = A.newGame({ n: ui.n, extra: ui.extra, human });
-  ui.dialog = null; ui.endSeen = false; ui.sel = null; ui.swapA = null; ui.hintSel = null; ui.reveal = null; ui.flash = null; ui.tray = false;
+  ui.dialog = null; ui.notice = null; ui.endSeen = false; ui.sel = null; ui.swapA = null; ui.hintSel = null; ui.reveal = null; ui.flash = null; ui.tray = false;
   save(); render(); schedule();
 }
 
@@ -268,6 +283,7 @@ document.addEventListener('click', (e) => {
     case 'assist': ui.assist = el.checked; save(); render(); return;
     case 'start': case 'again': startGame(); return;
     case 'newgame': clearTimeout(timer); ui.dialog = 'setup'; render(); return;
+    case 'ack': ui.notice = null; render(); schedule(); return;
     case 'closeend': ui.endSeen = true; render(); return;
     case 'tray': ui.tray = !ui.tray; render(); return;
     case 'cancel': ui.sel = null; render(); return;
