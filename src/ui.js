@@ -261,7 +261,7 @@ function dialogHTML() {
     return '<div class="overlay"><div class="dialog">' +
       '<div class="hero"><h2>Escape from <span class="tag">Ace-catraz!</span></h2><div class="fan">' + fan + '</div>' +
       '<div class="crew">' + [0, 1, 2, 3].map((k) => avatar(k, 44)).join('') + '</div>' +
-      '<p>You are Ace. You can see every crewmate’s cards but never your own.</p><p class="demobadge">Playable demo · Feedback: Andy Serwatuk, games@serwatuk.ca</p></div>' +
+      '<p>You are Ace. You can see every crewmate’s cards but never your own.</p><p class="demobadge">Playable demo by Andy Serwatuk · Feedback or publishing inquiries: games@serwatuk.ca</p></div>' +
       '<div class="box"><div class="field"><b>Crew size</b><div class="seg">' + segN + '</div><p class="note">' + obs + ' obstacles, ' + (ui.n - 1) + ' extra HARD card' + (ui.n > 2 ? 's' : '') + ' shuffled in</p></div>' +
       '<label class="check"><input type="checkbox" data-act="extra" ' + (ui.extra ? 'checked' : '') + '> Add one obstacle (harder, per the rules tip)</label>' +
       '<div class="field"><b>CPU speed</b><div class="seg">' + segS + '</div></div>' +
@@ -286,7 +286,7 @@ function dialogHTML() {
 
 const MAIL = 'games@serwatuk.ca';
 function footHTML() {
-  return '<footer class="site"><span class="demo">Demo</span><span>A playable demo of a cooperative card game in development. Feedback and playtest notes are very welcome: Andy Serwatuk, <a href="mailto:' + MAIL + '?subject=Escape%20from%20Ace-catraz%20feedback">' + MAIL + '</a></span></footer>';
+  return '<footer class="site"><span class="demo">Demo</span><span>A playable demo of a cooperative card game by designer Andy Serwatuk. Send feedback, or get in touch about publishing opportunities: <a href="mailto:' + MAIL + '?subject=Escape%20from%20Ace-catraz">' + MAIL + '</a></span></footer>';
 }
 
 function render() {
