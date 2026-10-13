@@ -88,7 +88,10 @@ function planHTML() {
 function tableHTML() {
   const alarm = A.alarmVisible(G);
   const flash = alarm ? '<div class="stack alarm">ALARM<br>SOUNDS</div>' : '<div class="stack flash">' + G.deck.length + '</div>';
-  const pat = G.patrol.length ? '<div class="stack patrol">GUARD<br>PATROL<br>' + G.patrol.length + '</div>' : '<div class="stack empty">empty</div>';
+  const top = G.patrol[G.patrol.length - 1];
+  const PL = { easy: ['EXTREME CAUTION', 'hard to pass', 'caution'], medium: ['MEDIUM', 'medium odds', 'med'], hard: ['RELAXED', 'easy to pass', 'relaxed'] };
+  const lv = top ? PL[top.level] : null;
+  const pat = top ? '<div class="stack patrol ' + lv[2] + '">GUARD PATROL<b>' + lv[0] + '</b></div>' : '<div class="stack empty">empty</div>';
   const lg = G.lastGuard;
   let guard = '<span class="mono" style="color:var(--muted);font-size:12px">No guard check yet.</span>';
   if (lg) guard = patUp(lg.patrol) + card(lg.flash) + '<div><div class="verdict ' + (lg.pass ? 'pass' : 'fail') + '">' + (lg.pass ? 'Pass' : 'Fail') + '</div><div class="mono" style="font-size:11px;color:var(--muted)">' + esc(G.players[lg.by].name) + (lg.pass ? ' may give a hint' : ' stays silent') + '</div></div>';
@@ -96,7 +99,7 @@ function tableHTML() {
   let rev = '';
   if (ui.reveal) rev = '<div><b>Last breakthrough: ' + (ui.reveal.ok ? 'success' : 'FAILED') + '</b><div class="reveal">' + ui.reveal.items.map((r) => '<div class="corner">' + card(r.card, 'mini') + '<span>' + esc(G.players[r.player].name) + '</span></div>').join('') + '</div></div>';
   return '<section class="panel"><h2>The yard <small>flashlight deck, patrol deck, last guard check</small></h2><div class="table">' +
-    '<div class="pile">' + flash + 'flashlight deck</div><div class="pile">' + pat + 'patrol deck</div>' +
+    '<div class="pile">' + flash + 'flashlight deck</div><div class="pile">' + pat + (lv ? 'next check: ' + lv[1] + ' \u00b7 ' + G.patrol.length + ' left' : 'patrol deck empty') + '</div>' +
     '<div class="pile"><button class="btn sm" data-act="tray">Discards ' + G.discard.length + ' / ' + G.patrolDiscard.length + '</button></div>' +
     '<div class="guardbox">' + guard + '</div>' +
     '<div class="banner"><b>Latest</b>' + last.map((l, i) => '<div style="' + (i ? 'opacity:.6;font-size:13px' : 'font-weight:600') + '">' + esc(l.text) + '</div>').join('') + rev + '</div></div></section>';
