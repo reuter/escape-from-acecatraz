@@ -223,7 +223,7 @@ function helpHTML() {
     '<div class="box"><h3>The goal</h3><p>You and your crew are stuck in Ace-Catraz. Clear every obstacle in the escape plan together and you win. Set off the alarm even once and everyone loses.</p>' +
     '<p><b>The twist:</b> you can see your crewmates’ cards, but never your own. Your crew has to tell you what you are holding, and you have to remember it.</p></div>' +
     '<div class="box"><h3>The table</h3><ul>' +
-    '<li><b>Escape plan:</b> a row of obstacle cards (7 for 2 players, 5 for 3, 3 for 4). Each one says which cards <i>match</i> it, such as “RED” or “ACE OR JACK”. Only the active obstacle and the next one are face up.</li>' +
+    '<li><b>Escape plan:</b> a row of obstacle cards (8 for 2 players, 5 for 3, 3 for 4). Each one says which cards <i>match</i> it, such as “RED” or “ACE OR JACK”. Only the active obstacle and the next one are face up.</li>' +
     '<li><b>Flashlight deck:</b> a standard 52-card deck, with the Alarm Sounds card at the very bottom. Everyone starts with 5 cards.</li>' +
     '<li><b>Patrol deck:</b> guard cards used for guard checks. It shows how tough the next check will be (relaxed, careful or extreme caution).</li>' +
     '<li><b>Lock levels:</b> easy, medium and hard. Hard obstacles are shuffled in among the others, and the rest of the hard cards go into the patrol deck.</li></ul>' +
@@ -260,7 +260,7 @@ function dialogHTML() {
   if (ui.help) return helpHTML();
   if (ui.dialog === 'setup') {
     const segN = [2, 3, 4].map((n) => '<button data-act="setn" data-v="' + n + '" aria-pressed="' + (ui.n === n) + '">' + n + ' players</button>').join('');
-    const obs = { 2: 7, 3: 5, 4: 3 }[ui.n] + (ui.extra ? 1 : 0);
+    const obs = { 2: 8, 3: 5, 4: 3 }[ui.n] + (ui.extra ? 1 : 0);
     const segS = [['Fast', 350], ['Normal', 800], ['Slow', 1500]].map((d) => '<button data-act="setspeed" data-v="' + d[1] + '" aria-pressed="' + (ui.speed === d[1]) + '">' + d[0] + '</button>').join('');
     const fan = [[1, 'S'], [12, 'H'], [1, 'D'], [11, 'C'], [13, 'S']].map((c, k) => '<div class="fc" style="transform:rotate(' + (k - 2) * 9 + 'deg) translateY(' + Math.abs(k - 2) * 4 + 'px)">' + card({ rank: c[0], suit: c[1] }, '', 'tabindex="-1"') + '</div>').join('');
     return '<div class="overlay"><div class="dialog">' +

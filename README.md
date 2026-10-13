@@ -24,7 +24,7 @@ Rebuild after editing anything in `src/`:
 
 ## Rules as implemented
 
-- Setup: 7, 5 or 3 obstacles for 2, 3 or 4 players, with 1, 2 or 3 HARD cards shuffled in before the draw. Unused security cards form the patrol deck. The escape direction is chosen after the lock levels are visible.
+- Setup: 8, 5 or 3 obstacles for 2, 3 or 4 players, with 1, 2 or 3 HARD cards shuffled in before the draw. Unused security cards form the patrol deck. The escape direction is chosen after the lock levels are visible.
 - Actions: Play my part, Guard check, Distract, Riot, Pass, then an optional Breakthrough.
 - Riot needs at least 5 flashlight cards left, discards 5, then swaps any two cards (own, another player's, or the discard pile; at least one from a hand). A card that moves into another player's hand becomes known to its new holder.
 - Pass is available once the Alarm Sounds card is visible, or when a player has no other legal action.

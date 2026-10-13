@@ -68,7 +68,7 @@ function newGame(opts) {
   const easyMed = SEC.filter((s) => s.level !== 'hard');
   const hardIn = n - 1; // 2p:1, 3p:2, 4p:3
   const obsDeck = shuffle(easyMed.concat(hardAll.slice(0, hardIn)), rng);
-  const nObs = { 2: 7, 3: 5, 4: 3 }[n] + (opts.extra ? 1 : 0);
+  const nObs = { 2: 8, 3: 5, 4: 3 }[n] + (opts.extra ? 1 : 0);
   const obstacles = obsDeck.slice(0, nObs).map((sec, i) => ({ sec, faceUp: false, cleared: false, planted: [] }));
   const patrol = shuffle(obsDeck.slice(nObs).concat(hardAll.slice(hardIn)), rng);
   const deck = shuffle(CARDS, rng);
