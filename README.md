@@ -29,3 +29,8 @@ Rebuild after editing anything in `src/`:
 - Riot needs at least 5 flashlight cards left, discards 5, then swaps any two cards (own, another player's, or the discard pile; at least one from a hand). A card that moves into another player's hand becomes known to its new holder.
 - Pass is available once the Alarm Sounds card is visible, or when a player has no other legal action.
 - Everyone passing in a row, or everyone running out of cards with obstacles left, loses.
+
+## How the CPU decides
+
+- Hints follow a convention: point at a card that fits the active obstacle if any teammate holds one they aren't sure about. Pointing elsewhere means nobody has one ("silence speaks"), and the engine records that as a `not` tag on those cards, only when it is true.
+- When a CPU has to choose between planting a card (blind or not), a guard check, a riot or passing, it doesn't use fixed rules. It samples plausible hidden worlds (its own cards, the deck, face-down obstacles) consistent with every hint, plays each candidate move forward with the ordinary crew policy, and picks the one that wins most often (`mc` in `CFG`, `src/cpu.js`).

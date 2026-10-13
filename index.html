@@ -544,6 +544,7 @@ function apply(G, a) {
         G.result = { won: false, reason: 'The breakthrough failed. ' + label(bad[0].card) + ' did not meet "' + O.sec.text + '". The alarm is tripped.' };
         G.phase = 'over'; refreshSeen(G); return OK;
       }
+      for (const rc of O.planted) for (const st of G.seen) st.add(rc.card.id); // revealed to everyone
       O.cleared = true; G.cur++;
       if (G.cur >= G.obstacles.length) {
         G.result = { won: true, reason: 'Every obstacle is cleared. Freedom!' };
@@ -564,6 +565,78 @@ function apply(G, a) {
   }
   refreshSeen(G);
   return OK;
+}
+
+// A plausible full table, built from what player p can know: p's own hidden cards, the deck order, the hidden
+// obstacles and the patrol deck are re-dealt at random but consistent with every hint and silence inference.
+// Used by the CPU to play candidate moves forward ("rollouts"). Returns null if it can't make a consistent world.
+function sampleWorld(G, p, seed) {
+  const rng = mulberry32(seed);
+  const O = active(G), me = G.players[p];
+  const pool = poolFor(G, p);
+  const unk = [];
+  me.hand.forEach((s, i) => { if (!isExact(s.known)) unk.push({ t: 'h', i, known: s.known, not: s.not }); });
+  const rec = O ? plantedBy(O, p) : null;
+  if (rec && !isExact(rec.known) && !G.seen[p].has(rec.card.id)) unk.push({ t: 'r', known: rec.known, not: rec.not });
+  if (pool.length - unk.length !== G.deck.length) return null;
+  const cand = unk.map((u) => pool.filter((c) => knownMatches(c, u.known) && failsAllNot(c, u.not)));
+  const order = unk.map((_, i) => i).sort((a, b) => cand[a].length - cand[b].length);
+  let pick = null;
+  for (let attempt = 0; attempt < 30 && !pick; attempt++) {
+    const used = new Set(), got = new Array(unk.length);
+    let ok = true;
+    for (const i of order) {
+      const opts = cand[i].filter((c) => !used.has(c.id));
+      if (!opts.length) { ok = false; break; }
+      const c = opts[Math.floor(rng() * opts.length)];
+      used.add(c.id); got[i] = c;
+    }
+    if (ok) pick = { got, used };
+  }
+  if (!pick) return null;
+  const rest = shuffle(pool.filter((c) => !pick.used.has(c.id)), rng);
+  // hidden security cards: obstacles still face down keep their (visible) lock level; the rest become the patrol deck
+  const known = new Set();
+  for (const o of G.obstacles) if (o.faceUp || o.cleared) known.add(o.sec.key);
+  for (const c of G.patrolDiscard) known.add(c.key);
+  const hiddenIdx = G.obstacles.map((o, i) => i).filter((i) => !G.obstacles[i].faceUp && !G.obstacles[i].cleared);
+  const unknownSec = shuffle(SEC.filter((c) => !known.has(c.key)), rng);
+  const newSec = {};
+  for (const i of hiddenIdx) {
+    const lvl = G.obstacles[i].sec.level, j = unknownSec.findIndex((c) => c.level === lvl);
+    if (j < 0) return null;
+    newSec[i] = unknownSec.splice(j, 1)[0];
+  }
+  if (unknownSec.length !== G.patrol.length) return null;
+  const topLvl = G.patrol.length ? G.patrol[G.patrol.length - 1].level : null;
+  if (topLvl) { const j = unknownSec.findIndex((c) => c.level === topLvl); if (j < 0) return null; unknownSec.push(unknownSec.splice(j, 1)[0]); }
+  const W = Object.assign({}, G);
+  W.rng = rng; W.rngSeed = (seed ^ 0x9e3779b9) >>> 0; W.log = []; W.stats = Object.assign({}, G.stats); W.result = null;
+  W.discard = G.discard.slice(); W.patrolDiscard = G.patrolDiscard.slice(); W.deck = rest; W.patrol = unknownSec;
+  W.players = G.players.map((pl) => ({ idx: pl.idx, name: pl.name, human: false, hand: pl.hand.map((s) => ({ card: s.card, known: Object.assign({}, s.known), not: (s.not || []).slice() })) }));
+  W.obstacles = G.obstacles.map((o, i) => ({ sec: newSec[i] || o.sec, faceUp: o.faceUp, cleared: o.cleared, planted: o.planted.map((r) => ({ player: r.player, card: r.card, known: Object.assign({}, r.known), not: (r.not || []).slice() })) }));
+  W.seen = G.seen.map((st) => new Set(st));
+  const realIds = [];
+  unk.forEach((u, k) => {
+    if (u.t === 'h') { realIds.push(me.hand[u.i].card.id); W.players[p].hand[u.i].card = pick.got[k]; }
+    else { const wr = plantedBy(W.obstacles[G.cur], p); realIds.push(wr.card.id); wr.card = pick.got[k]; }
+  });
+  for (let q = 0; q < G.n; q++) {
+    if (q === p) continue;
+    for (const id of realIds) W.seen[q].delete(id);
+    for (const c of pick.got) W.seen[q].add(c.id);
+  }
+  return W;
+}
+
+function cloneWorld(W) {
+  const C = Object.assign({}, W);
+  C.rng = mulberry32(W.rngSeed); C.log = []; C.stats = Object.assign({}, W.stats);
+  C.deck = W.deck.slice(); C.discard = W.discard.slice(); C.patrol = W.patrol.slice(); C.patrolDiscard = W.patrolDiscard.slice();
+  C.players = W.players.map((pl) => ({ idx: pl.idx, name: pl.name, human: false, hand: pl.hand.map((s) => ({ card: s.card, known: Object.assign({}, s.known), not: s.not.slice() })) }));
+  C.obstacles = W.obstacles.map((o) => ({ sec: o.sec, faceUp: o.faceUp, cleared: o.cleared, planted: o.planted.map((r) => ({ player: r.player, card: r.card, known: Object.assign({}, r.known), not: (r.not || []).slice() })) }));
+  C.seen = W.seen.map((st) => new Set(st));
+  return C;
 }
 
 function endTurn(G) {
@@ -588,7 +661,7 @@ function endTurn(G) {
 const api = {
   SUITS, SYM, SUIT_NAME, RANKS, RANK_WORD, CARDS, SEC, PATROL_LABEL, NAMES,
   label, idOf, isExact, knownMatches, mulberry32, shuffle,
-  newGame, apply, legal, active, alarmVisible, allPlanted, plantedBy, hasSwapOption,
+  newGame, sampleWorld, cloneWorld, apply, legal, active, alarmVisible, allPlanted, plantedBy, hasSwapOption,
   poolFor, handCandidates, modelPool, plantedCandidates,
 };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Ace = api;
@@ -604,7 +677,8 @@ const A = typeof require !== 'undefined' ? require('./engine.js') : root.Ace;
 const CFG = { gamble: 0.45, needVerifier: true, cycle: true, cycleMinDeck: { 2: 20, 3: 20, 4: 99 }, cycleNeedsNoHint: true, cycleNeedsVerifier: true, alarmGamble: true,
   convention: true,        // when pointing at a card, prefer one that fits the active obstacle (so silence carries meaning)
   cycleOnExcluded: true,   // every unresolved card of mine is known not to fit: plant one blind to draw a fresh card
-  cycleExcludedMinDeck: { 2: 1, 3: 1, 4: 999 } }; // 4p: the deck is too tight to burn cards cycling
+  cycleExcludedMinDeck: { 2: 1, 3: 1, 4: 999 },
+  mc: true, mcSamples: 16 }; // mc: weigh plant / guard check / riot by playing each forward in sampled worlds // 4p: the deck is too tight to burn cards cycling
 
 const frac = (cs, test) => { if (!cs.length) return 0; let m = 0; for (const c of cs) if (test(c)) m++; return m / cs.length; };
 const allPass = (cs, test) => cs.length > 0 && cs.every(test);
@@ -695,6 +769,36 @@ function decideHint(G, p) {
   return { type: 'hint', to: T.idx, hand: 0, dim: 'rank' };
 }
 
+// Judgement call: instead of fixed rules, imagine plausible versions of the hidden cards, play each candidate move
+// forward with the ordinary crew policy, and pick the move that wins most often.
+let inRollout = false;
+function rollout(W, act) {
+  if (!A.apply(W, act).ok) return null;
+  let steps = 0;
+  while (!W.result && steps++ < 400) { if (!A.apply(W, decide(W)).ok) break; }
+  return W.result && W.result.won ? 1 : 0.3 * (Math.min(W.cur, W.obstacles.length) / W.obstacles.length);
+}
+function mcChoose(G, p, cands) {
+  if (!CFG.mc || inRollout || cands.length < 2) return null;
+  const tot = cands.map(() => 0);
+  let got = 0;
+  inRollout = true;
+  try {
+    for (let k = 0; k < CFG.mcSamples; k++) {
+      const W0 = A.sampleWorld(G, p, (G.seed * 7919 + G.turnCount * 104729 + k * 15485863) >>> 0);
+      if (!W0) continue;
+      const vals = cands.map((cd) => rollout(A.cloneWorld(W0), cd.act));
+      if (vals.some((v) => v == null)) continue;
+      vals.forEach((v, i) => { tot[i] += v; });
+      got++;
+    }
+  } finally { inRollout = false; }
+  if (got < Math.ceil(CFG.mcSamples / 2)) return null;
+  let bi = 0;
+  tot.forEach((t, i) => { if (t > tot[bi] + 1e-9) bi = i; });
+  return cands[bi].act;
+}
+
 function decideAction(G, p) {
   const me = G.players[p], O = A.active(G), L = A.legal(G), test = O.sec.test, N = G.obstacles[G.cur + 1];
   const myRec = A.plantedBy(O, p);
@@ -713,6 +817,16 @@ function decideAction(G, p) {
   if (!myRec && L.plant.ok) {
     const best = argmax(me.hand, (s, i) => P[i] * 10 - futureVal(i));
     if (P[best] === 1) return { type: 'plant', hand: best };
+    if (CFG.mc && !inRollout) {
+      const cs = [{ act: { type: 'plant', hand: best } }];
+      const dump = argmax(me.hand, (s, i) => -futureVal(i) * 3 - P[i] * 0.2 - (A.isExact(s.known) ? 5 : 0));
+      if (dump !== best) cs.push({ act: { type: 'plant', hand: dump } });
+      if (L.guard.ok) cs.push({ act: { type: 'guard' } });
+      if (L.riot.ok && G.deck.length >= 6) cs.push({ act: { type: 'riot' } });
+      if (L.pass.ok) cs.push({ act: { type: 'pass' } });
+      const pick = mcChoose(G, p, cs);
+      if (pick) return pick;
+    }
     if (P[best] >= CFG.gamble && (!CFG.needVerifier || verifierExists(G, p))) return { type: 'plant', hand: best };
     if (!L.guard.ok && P[best] > 0) return { type: 'plant', hand: best };
     if (CFG.cycleOnExcluded && G.deck.length >= (typeof CFG.cycleExcludedMinDeck === 'object' ? CFG.cycleExcludedMinDeck[G.n] : CFG.cycleExcludedMinDeck) && P.every((x) => x === 0)) {

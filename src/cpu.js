@@ -7,7 +7,8 @@ const A = typeof require !== 'undefined' ? require('./engine.js') : root.Ace;
 const CFG = { gamble: 0.45, needVerifier: true, cycle: true, cycleMinDeck: { 2: 20, 3: 20, 4: 99 }, cycleNeedsNoHint: true, cycleNeedsVerifier: true, alarmGamble: true,
   convention: true,        // when pointing at a card, prefer one that fits the active obstacle (so silence carries meaning)
   cycleOnExcluded: true,   // every unresolved card of mine is known not to fit: plant one blind to draw a fresh card
-  cycleExcludedMinDeck: { 2: 1, 3: 1, 4: 999 } }; // 4p: the deck is too tight to burn cards cycling
+  cycleExcludedMinDeck: { 2: 1, 3: 1, 4: 999 },
+  mc: true, mcSamples: 16 }; // mc: weigh plant / guard check / riot by playing each forward in sampled worlds // 4p: the deck is too tight to burn cards cycling
 
 const frac = (cs, test) => { if (!cs.length) return 0; let m = 0; for (const c of cs) if (test(c)) m++; return m / cs.length; };
 const allPass = (cs, test) => cs.length > 0 && cs.every(test);
@@ -98,6 +99,36 @@ function decideHint(G, p) {
   return { type: 'hint', to: T.idx, hand: 0, dim: 'rank' };
 }
 
+// Judgement call: instead of fixed rules, imagine plausible versions of the hidden cards, play each candidate move
+// forward with the ordinary crew policy, and pick the move that wins most often.
+let inRollout = false;
+function rollout(W, act) {
+  if (!A.apply(W, act).ok) return null;
+  let steps = 0;
+  while (!W.result && steps++ < 400) { if (!A.apply(W, decide(W)).ok) break; }
+  return W.result && W.result.won ? 1 : 0.3 * (Math.min(W.cur, W.obstacles.length) / W.obstacles.length);
+}
+function mcChoose(G, p, cands) {
+  if (!CFG.mc || inRollout || cands.length < 2) return null;
+  const tot = cands.map(() => 0);
+  let got = 0;
+  inRollout = true;
+  try {
+    for (let k = 0; k < CFG.mcSamples; k++) {
+      const W0 = A.sampleWorld(G, p, (G.seed * 7919 + G.turnCount * 104729 + k * 15485863) >>> 0);
+      if (!W0) continue;
+      const vals = cands.map((cd) => rollout(A.cloneWorld(W0), cd.act));
+      if (vals.some((v) => v == null)) continue;
+      vals.forEach((v, i) => { tot[i] += v; });
+      got++;
+    }
+  } finally { inRollout = false; }
+  if (got < Math.ceil(CFG.mcSamples / 2)) return null;
+  let bi = 0;
+  tot.forEach((t, i) => { if (t > tot[bi] + 1e-9) bi = i; });
+  return cands[bi].act;
+}
+
 function decideAction(G, p) {
   const me = G.players[p], O = A.active(G), L = A.legal(G), test = O.sec.test, N = G.obstacles[G.cur + 1];
   const myRec = A.plantedBy(O, p);
@@ -116,6 +147,16 @@ function decideAction(G, p) {
   if (!myRec && L.plant.ok) {
     const best = argmax(me.hand, (s, i) => P[i] * 10 - futureVal(i));
     if (P[best] === 1) return { type: 'plant', hand: best };
+    if (CFG.mc && !inRollout) {
+      const cs = [{ act: { type: 'plant', hand: best } }];
+      const dump = argmax(me.hand, (s, i) => -futureVal(i) * 3 - P[i] * 0.2 - (A.isExact(s.known) ? 5 : 0));
+      if (dump !== best) cs.push({ act: { type: 'plant', hand: dump } });
+      if (L.guard.ok) cs.push({ act: { type: 'guard' } });
+      if (L.riot.ok && G.deck.length >= 6) cs.push({ act: { type: 'riot' } });
+      if (L.pass.ok) cs.push({ act: { type: 'pass' } });
+      const pick = mcChoose(G, p, cs);
+      if (pick) return pick;
+    }
     if (P[best] >= CFG.gamble && (!CFG.needVerifier || verifierExists(G, p))) return { type: 'plant', hand: best };
     if (!L.guard.ok && P[best] > 0) return { type: 'plant', hand: best };
     if (CFG.cycleOnExcluded && G.deck.length >= (typeof CFG.cycleExcludedMinDeck === 'object' ? CFG.cycleExcludedMinDeck[G.n] : CFG.cycleExcludedMinDeck) && P.every((x) => x === 0)) {
