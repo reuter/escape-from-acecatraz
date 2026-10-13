@@ -4,7 +4,10 @@
 const A = typeof require !== 'undefined' ? require('./engine.js') : root.Ace;
 // Tunable CPU behaviour. `gamble`: plant an unverified card at or above this chance of matching.
 // `needVerifier`: only gamble when another player can vouch for the pile. `cycle`: plant a blind card just to draw a new one.
-const CFG = { gamble: 0.45, needVerifier: true, cycle: true, cycleMinDeck: { 2: 20, 3: 20, 4: 99 }, cycleNeedsNoHint: true, cycleNeedsVerifier: true, alarmGamble: true };
+const CFG = { gamble: 0.45, needVerifier: true, cycle: true, cycleMinDeck: { 2: 20, 3: 20, 4: 99 }, cycleNeedsNoHint: true, cycleNeedsVerifier: true, alarmGamble: true,
+  convention: true,        // when pointing at a card, prefer one that fits the active obstacle (so silence carries meaning)
+  cycleOnExcluded: true,   // every unresolved card of mine is known not to fit: plant one blind to draw a fresh card
+  cycleExcludedMinDeck: { 2: 1, 3: 1, 4: 999 } }; // 4p: the deck is too tight to burn cards cycling
 
 const frac = (cs, test) => { if (!cs.length) return 0; let m = 0; for (const c of cs) if (test(c)) m++; return m / cs.length; };
 const allPass = (cs, test) => cs.length > 0 && cs.every(test);
@@ -66,8 +69,23 @@ function hintOptions(G, p) {
   return out.sort((a, b) => b.score - a.score);
 }
 
+// Cards a teammate could use that they are not yet sure about. The convention is to point at one of these when any exists.
+function usefulSlots(G, p) {
+  const O = A.active(G), set = new Set();
+  for (const T of G.players) {
+    if (T.idx === p || !T.hand.length || A.plantedBy(O, T.idx)) continue;
+    const c0 = A.handCandidates(G, T.idx, A.modelPool(G, p, T.idx));
+    T.hand.forEach((s, k) => { if (O.sec.test(s.card) && !(c0[k].length && allPass(c0[k], O.sec.test))) set.add(T.idx + ':' + k); });
+  }
+  return set;
+}
+
 function decideHint(G, p) {
-  const opts = hintOptions(G, p);
+  let opts = hintOptions(G, p);
+  if (CFG.convention) {
+    const u = usefulSlots(G, p);
+    if (u.size) { const f = opts.filter((o) => u.has(o.to + ':' + o.hand)); if (f.length) opts = f; }
+  }
   if (opts.length) { const o = opts[0]; return { type: 'hint', to: o.to, hand: o.hand, dim: o.dim }; }
   // Forced to hint something: give any new fact, otherwise repeat one.
   for (const T of G.players) {
@@ -100,6 +118,10 @@ function decideAction(G, p) {
     if (P[best] === 1) return { type: 'plant', hand: best };
     if (P[best] >= CFG.gamble && (!CFG.needVerifier || verifierExists(G, p))) return { type: 'plant', hand: best };
     if (!L.guard.ok && P[best] > 0) return { type: 'plant', hand: best };
+    if (CFG.cycleOnExcluded && G.deck.length >= (typeof CFG.cycleExcludedMinDeck === 'object' ? CFG.cycleExcludedMinDeck[G.n] : CFG.cycleExcludedMinDeck) && P.every((x) => x === 0)) {
+      const dump = argmax(me.hand, (s, i) => -futureVal(i) * 3 - (A.isExact(s.known) ? 5 : 0));
+      return { type: 'plant', hand: dump };
+    }
     if (CFG.cycle && G.deck.length >= (typeof CFG.cycleMinDeck === 'object' ? CFG.cycleMinDeck[G.n] : CFG.cycleMinDeck) && P[best] < CFG.gamble && (!CFG.cycleNeedsVerifier || verifierExists(G, p))) {
       const hs = hintOptions(G, p);
       if (!CFG.cycleNeedsNoHint || !hs.length || hs[0].score < 2) {

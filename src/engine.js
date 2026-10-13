@@ -52,8 +52,10 @@ function shuffle(arr, rng) {
 const isExact = (k) => k.suit != null && k.rank != null;
 const knownMatches = (c, k) => (k.suit == null || c.suit === k.suit) && (k.rank == null || c.rank === k.rank);
 const emptyKnown = () => ({ suit: null, rank: null });
-const mkSlot = (card) => ({ card, known: emptyKnown() });
-const exactSlot = (card) => ({ card, known: { suit: card.suit, rank: card.rank } });
+const mkSlot = (card) => ({ card, known: emptyKnown(), not: [] });
+const exactSlot = (card) => ({ card, known: { suit: card.suit, rank: card.rank }, not: [] });
+const secOf = (key) => SEC.find((x) => x.key === key);
+const failsAllNot = (c, not) => !not || not.every((k) => !secOf(k).test(c));
 
 const NAMES = ['Ace', 'Deuce', 'Knuckles', 'Duke'];
 
@@ -86,6 +88,39 @@ function newGame(opts) {
   return G;
 }
 
+// Silence speaks: a crewmate who points at a card must point at a card that fits the active obstacle if any teammate
+// is holding one they are not yet sure about. So if nobody has such a card, every unresolved card in the other hands
+// is known NOT to fit. This only records the inference when it is actually true, so it can never mislead the crew.
+function silenceCheck(G, hinter) {
+  const O = active(G);
+  if (!O) return null;
+  const who = [];
+  for (const q of G.players) {
+    if (q.idx === hinter || !q.hand.length || plantedBy(O, q.idx)) continue;
+    const cands = handCandidates(G, q.idx);
+    for (let k = 0; k < q.hand.length; k++) {
+      if (!O.sec.test(q.hand[k].card)) continue;
+      if (cands[k].length && cands[k].every(O.sec.test)) continue; // they already know this one fits
+      return null; // there was a card worth pointing at, so silence tells us nothing
+    }
+    who.push(q.idx);
+  }
+  return who.length ? { key: O.sec.key, who } : null;
+}
+function applySilence(G, hinter, sil) {
+  const O = active(G);
+  const names = [];
+  for (const i of sil.who) {
+    for (const s of G.players[i].hand) {
+      if (isExact(s.known) || O.sec.test(s.card) || s.not.includes(sil.key)) continue;
+      s.not.push(sil.key);
+    }
+    names.push(G.players[i].name);
+  }
+  G.lastSilence = { by: hinter, key: sil.key, who: sil.who };
+  say(G, null, 'Silence speaks: ' + G.players[hinter].name + ' had no better card to point at, so ' + names.join(', ') + ' can tell that no unlabelled card in their hand fits ' + O.sec.name + '.');
+}
+
 function say(G, p, text) { G.log.push({ n: G.log.length, p, text }); }
 function active(G) { return G.cur < G.obstacles.length ? G.obstacles[G.cur] : null; }
 function alarmVisible(G) { return G.deck.length === 0; }
@@ -114,7 +149,7 @@ function poolFor(G, p) {
 function handCandidates(G, p, pool) {
   const hand = G.players[p].hand;
   pool = pool || poolFor(G, p);
-  const cands = hand.map((s) => (isExact(s.known) ? [CARDS[idOf(s.known.suit, s.known.rank)]] : pool.filter((c) => knownMatches(c, s.known))));
+  const cands = hand.map((s) => (isExact(s.known) ? [CARDS[idOf(s.known.suit, s.known.rank)]] : pool.filter((c) => knownMatches(c, s.known) && failsAllNot(c, s.not))));
   let changed = true;
   while (changed) {
     changed = false;
@@ -138,7 +173,7 @@ function modelPool(G, h, T) {
 }
 function plantedCandidates(G, viewer, rec) {
   if (rec.player !== viewer || isExact(rec.known) || G.seen[viewer].has(rec.card.id)) return [rec.card];
-  return poolFor(G, viewer).filter((c) => knownMatches(c, rec.known));
+  return poolFor(G, viewer).filter((c) => knownMatches(c, rec.known) && failsAllNot(c, rec.not));
 }
 
 // ---- Actions ----
@@ -189,7 +224,7 @@ function apply(G, a) {
       if (ph !== 'action' || !L.plant.ok) return no(L && L.plant ? L.plant.why : 'Not allowed now.');
       if (!(a.hand >= 0 && a.hand < me.hand.length)) return no('Pick a card in your hand.');
       const slot = me.hand.splice(a.hand, 1)[0];
-      O.planted.push({ player: p, card: slot.card, known: Object.assign({}, slot.known) });
+      O.planted.push({ player: p, card: slot.card, known: Object.assign({}, slot.known), not: (slot.not || []).slice() });
       if (isExact(slot.known)) G.seen[p].add(slot.card.id);
       G.stats.plants++;
       say(G, p, me.name + ' plants a card face-down at the active obstacle.');
@@ -219,11 +254,13 @@ function apply(G, a) {
       const slot = T.hand[a.hand];
       if (!slot) return no('Pick a card in their hand.');
       if (a.dim !== 'suit' && a.dim !== 'rank') return no('Choose suit or rank.');
+      const silent = G.opts.silence !== false ? silenceCheck(G, p) : null; // before the hint lands
       slot.known[a.dim] = slot.card[a.dim];
       G.stats.hints++;
       const txt = a.dim === 'suit' ? 'a ' + SUIT_NAME[slot.card.suit].slice(0, -1) : 'a ' + RANK_WORD[slot.card.rank - 1];
       say(G, p, me.name + ' points at ' + T.name + "'s card " + (a.hand + 1) + ': it is ' + (a.dim === 'suit' ? 'a ' + SUIT_NAME[slot.card.suit] + ' card' : txt) + '.');
       G.lastHint = { by: p, to: a.to, hand: a.hand, dim: a.dim };
+      if (silent) applySilence(G, p, silent);
       G.phase = 'post'; break;
     }
     case 'distract': {

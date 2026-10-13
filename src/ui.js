@@ -17,12 +17,16 @@ function card(c, cls, attrs) {
     '<span class="r">' + A.RANKS[c.rank - 1] + '</span><span class="s">' + A.SYM[c.suit] + '</span><span class="big">' + A.SYM[c.suit] + '</span></button>';
 }
 function back(cls, attrs) { return '<button class="pc back ' + (cls || '') + '" ' + (attrs || '') + ' aria-label="Face-down card"></button>'; }
-function known(k) {
+function notTag(not) {
+  return (not || []).map((key) => '<span class="known not">not ' + esc(A.SEC.find((x) => x.key === key).name) + '</span>').join('');
+}
+function known(k, not) {
+  const nt = notTag(not);
   if (A.isExact(k)) return '<span class="known exact">is ' + A.RANKS[k.rank - 1] + symHTML(k.suit) + '</span>';
   const parts = [];
   if (k.suit) parts.push(symHTML(k.suit));
   if (k.rank) parts.push(A.RANKS[k.rank - 1]);
-  return parts.length ? '<span class="known has">' + parts.join(' ') + '</span>' : '<span class="known">no hints</span>';
+  return parts.length ? '<span class="known has">' + parts.join(' ') + '</span>' + nt : nt || '<span class="known">no hints</span>';
 }
 function secUp(sec) {
   return '<div class="sec up"><span class="pill">ESCAPE PLAN</span><span class="nm">' + esc(sec.name) + '</span>' +
@@ -159,7 +163,7 @@ function seatHTML(p) {
       const selH = (md === 'hint' && ui.hintSel && ui.hintSel.to === p.idx && ui.hintSel.hand === i) || (sw && isSwapSel(p.idx, i)) ? 'sel ' : '';
       inner = card(s.card, m + fl + selH + (pick ? 'pick' : ''), md === 'hint' ? 'data-act="their" data-p="' + p.idx + '" data-i="' + i + '"' : sw ? 'data-act="swapslot" data-k="player" data-p="' + p.idx + '" data-i="' + i + '"' : '');
     }
-    return '<div class="slot">' + inner + known(s.known) + '</div>';
+    return '<div class="slot">' + inner + known(s.known, s.not) + '</div>';
   }).join('') || '<span class="mono" style="color:var(--muted)">Out of cards</span>';
   return '<div class="seat ' + (p.human ? 'me ' : '') + (turn ? 'turn' : '') + '"><h3>' + avatar(p.idx, 38) + esc(p.name) + (p.human ? ' (you)' : '') +
     (turn ? '<span class="st on">TURN</span>' : '') + '<span class="st ' + (planted ? 'on' : '') + '">' + (planted ? 'PLANTED' : 'NEEDS CARD') + '</span></h3>' +
@@ -240,6 +244,7 @@ function helpHTML() {
     '<li>Decks are never reshuffled. When the flashlight deck runs out the Alarm Sounds card is revealed and drawing is locked, so hands shrink as cards are planted.</li></ul></div>' +
     '<div class="box"><h3>Tips</h3><ul>' +
     '<li>Hints are your lifeline. Each tag under a card shows what that player knows about their own card: a suit, a rank, or both. Once both are known, it reads “is 7♥”.</li>' +
+    '<li><b>Silence speaks.</b> When you point at a card, point at one that fits the active obstacle if any teammate has one they aren’t sure about. So if a crewmate points at something else, you can tell that none of your unlabelled cards fit. This version tracks that for you with an amber “not …” tag, and it only appears when it is actually true.</li>' +
     '<li>Planting a card you aren’t sure about can be a smart way to cycle your hand, because a teammate can Distract it if it’s wrong. The catch is that you shouldn’t trigger the Breakthrough yourself on a card you can’t verify.</li>' +
     '<li>It only takes one player who is certain of their own planted card to safely trigger the Breakthrough, as everyone else’s planted cards are known from memory.</li>' +
     '<li>Rank order: A is 1, J is 11, Q is 12 and K is 13. “Odd” includes A, J and K; “Low” is A to 6; “High” is 7 to K.</li></ul></div>' +

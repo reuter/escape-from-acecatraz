@@ -200,6 +200,8 @@ aside { position: sticky; top: 12px; min-width: 0; }
 footer.site { max-width: 1280px; margin: 22px auto 8px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; background: var(--panel); border: 2px solid var(--line); border-radius: 14px; font-size: 13px; font-weight: 600; color: var(--muted); }
 footer.site a { color: var(--green); font-weight: 800; }
 .hero p.demobadge { width: fit-content; max-width: 100%; border-radius: 14px; text-align: center; }
+
+.known.not { color: var(--amber-ink); background: var(--amber-bg); border-color: #f2d28a; }
 </style>
 <div id="app"></div>
 <script>
@@ -257,8 +259,10 @@ function shuffle(arr, rng) {
 const isExact = (k) => k.suit != null && k.rank != null;
 const knownMatches = (c, k) => (k.suit == null || c.suit === k.suit) && (k.rank == null || c.rank === k.rank);
 const emptyKnown = () => ({ suit: null, rank: null });
-const mkSlot = (card) => ({ card, known: emptyKnown() });
-const exactSlot = (card) => ({ card, known: { suit: card.suit, rank: card.rank } });
+const mkSlot = (card) => ({ card, known: emptyKnown(), not: [] });
+const exactSlot = (card) => ({ card, known: { suit: card.suit, rank: card.rank }, not: [] });
+const secOf = (key) => SEC.find((x) => x.key === key);
+const failsAllNot = (c, not) => !not || not.every((k) => !secOf(k).test(c));
 
 const NAMES = ['Ace', 'Deuce', 'Knuckles', 'Duke'];
 
@@ -291,6 +295,39 @@ function newGame(opts) {
   return G;
 }
 
+// Silence speaks: a crewmate who points at a card must point at a card that fits the active obstacle if any teammate
+// is holding one they are not yet sure about. So if nobody has such a card, every unresolved card in the other hands
+// is known NOT to fit. This only records the inference when it is actually true, so it can never mislead the crew.
+function silenceCheck(G, hinter) {
+  const O = active(G);
+  if (!O) return null;
+  const who = [];
+  for (const q of G.players) {
+    if (q.idx === hinter || !q.hand.length || plantedBy(O, q.idx)) continue;
+    const cands = handCandidates(G, q.idx);
+    for (let k = 0; k < q.hand.length; k++) {
+      if (!O.sec.test(q.hand[k].card)) continue;
+      if (cands[k].length && cands[k].every(O.sec.test)) continue; // they already know this one fits
+      return null; // there was a card worth pointing at, so silence tells us nothing
+    }
+    who.push(q.idx);
+  }
+  return who.length ? { key: O.sec.key, who } : null;
+}
+function applySilence(G, hinter, sil) {
+  const O = active(G);
+  const names = [];
+  for (const i of sil.who) {
+    for (const s of G.players[i].hand) {
+      if (isExact(s.known) || O.sec.test(s.card) || s.not.includes(sil.key)) continue;
+      s.not.push(sil.key);
+    }
+    names.push(G.players[i].name);
+  }
+  G.lastSilence = { by: hinter, key: sil.key, who: sil.who };
+  say(G, null, 'Silence speaks: ' + G.players[hinter].name + ' had no better card to point at, so ' + names.join(', ') + ' can tell that no unlabelled card in their hand fits ' + O.sec.name + '.');
+}
+
 function say(G, p, text) { G.log.push({ n: G.log.length, p, text }); }
 function active(G) { return G.cur < G.obstacles.length ? G.obstacles[G.cur] : null; }
 function alarmVisible(G) { return G.deck.length === 0; }
@@ -319,7 +356,7 @@ function poolFor(G, p) {
 function handCandidates(G, p, pool) {
   const hand = G.players[p].hand;
   pool = pool || poolFor(G, p);
-  const cands = hand.map((s) => (isExact(s.known) ? [CARDS[idOf(s.known.suit, s.known.rank)]] : pool.filter((c) => knownMatches(c, s.known))));
+  const cands = hand.map((s) => (isExact(s.known) ? [CARDS[idOf(s.known.suit, s.known.rank)]] : pool.filter((c) => knownMatches(c, s.known) && failsAllNot(c, s.not))));
   let changed = true;
   while (changed) {
     changed = false;
@@ -343,7 +380,7 @@ function modelPool(G, h, T) {
 }
 function plantedCandidates(G, viewer, rec) {
   if (rec.player !== viewer || isExact(rec.known) || G.seen[viewer].has(rec.card.id)) return [rec.card];
-  return poolFor(G, viewer).filter((c) => knownMatches(c, rec.known));
+  return poolFor(G, viewer).filter((c) => knownMatches(c, rec.known) && failsAllNot(c, rec.not));
 }
 
 // ---- Actions ----
@@ -394,7 +431,7 @@ function apply(G, a) {
       if (ph !== 'action' || !L.plant.ok) return no(L && L.plant ? L.plant.why : 'Not allowed now.');
       if (!(a.hand >= 0 && a.hand < me.hand.length)) return no('Pick a card in your hand.');
       const slot = me.hand.splice(a.hand, 1)[0];
-      O.planted.push({ player: p, card: slot.card, known: Object.assign({}, slot.known) });
+      O.planted.push({ player: p, card: slot.card, known: Object.assign({}, slot.known), not: (slot.not || []).slice() });
       if (isExact(slot.known)) G.seen[p].add(slot.card.id);
       G.stats.plants++;
       say(G, p, me.name + ' plants a card face-down at the active obstacle.');
@@ -424,11 +461,13 @@ function apply(G, a) {
       const slot = T.hand[a.hand];
       if (!slot) return no('Pick a card in their hand.');
       if (a.dim !== 'suit' && a.dim !== 'rank') return no('Choose suit or rank.');
+      const silent = G.opts.silence !== false ? silenceCheck(G, p) : null; // before the hint lands
       slot.known[a.dim] = slot.card[a.dim];
       G.stats.hints++;
       const txt = a.dim === 'suit' ? 'a ' + SUIT_NAME[slot.card.suit].slice(0, -1) : 'a ' + RANK_WORD[slot.card.rank - 1];
       say(G, p, me.name + ' points at ' + T.name + "'s card " + (a.hand + 1) + ': it is ' + (a.dim === 'suit' ? 'a ' + SUIT_NAME[slot.card.suit] + ' card' : txt) + '.');
       G.lastHint = { by: p, to: a.to, hand: a.hand, dim: a.dim };
+      if (silent) applySilence(G, p, silent);
       G.phase = 'post'; break;
     }
     case 'distract': {
@@ -562,7 +601,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = api; else 
 const A = typeof require !== 'undefined' ? require('./engine.js') : root.Ace;
 // Tunable CPU behaviour. `gamble`: plant an unverified card at or above this chance of matching.
 // `needVerifier`: only gamble when another player can vouch for the pile. `cycle`: plant a blind card just to draw a new one.
-const CFG = { gamble: 0.45, needVerifier: true, cycle: true, cycleMinDeck: { 2: 20, 3: 20, 4: 99 }, cycleNeedsNoHint: true, cycleNeedsVerifier: true, alarmGamble: true };
+const CFG = { gamble: 0.45, needVerifier: true, cycle: true, cycleMinDeck: { 2: 20, 3: 20, 4: 99 }, cycleNeedsNoHint: true, cycleNeedsVerifier: true, alarmGamble: true,
+  convention: true,        // when pointing at a card, prefer one that fits the active obstacle (so silence carries meaning)
+  cycleOnExcluded: true,   // every unresolved card of mine is known not to fit: plant one blind to draw a fresh card
+  cycleExcludedMinDeck: { 2: 1, 3: 1, 4: 999 } }; // 4p: the deck is too tight to burn cards cycling
 
 const frac = (cs, test) => { if (!cs.length) return 0; let m = 0; for (const c of cs) if (test(c)) m++; return m / cs.length; };
 const allPass = (cs, test) => cs.length > 0 && cs.every(test);
@@ -624,8 +666,23 @@ function hintOptions(G, p) {
   return out.sort((a, b) => b.score - a.score);
 }
 
+// Cards a teammate could use that they are not yet sure about. The convention is to point at one of these when any exists.
+function usefulSlots(G, p) {
+  const O = A.active(G), set = new Set();
+  for (const T of G.players) {
+    if (T.idx === p || !T.hand.length || A.plantedBy(O, T.idx)) continue;
+    const c0 = A.handCandidates(G, T.idx, A.modelPool(G, p, T.idx));
+    T.hand.forEach((s, k) => { if (O.sec.test(s.card) && !(c0[k].length && allPass(c0[k], O.sec.test))) set.add(T.idx + ':' + k); });
+  }
+  return set;
+}
+
 function decideHint(G, p) {
-  const opts = hintOptions(G, p);
+  let opts = hintOptions(G, p);
+  if (CFG.convention) {
+    const u = usefulSlots(G, p);
+    if (u.size) { const f = opts.filter((o) => u.has(o.to + ':' + o.hand)); if (f.length) opts = f; }
+  }
   if (opts.length) { const o = opts[0]; return { type: 'hint', to: o.to, hand: o.hand, dim: o.dim }; }
   // Forced to hint something: give any new fact, otherwise repeat one.
   for (const T of G.players) {
@@ -658,6 +715,10 @@ function decideAction(G, p) {
     if (P[best] === 1) return { type: 'plant', hand: best };
     if (P[best] >= CFG.gamble && (!CFG.needVerifier || verifierExists(G, p))) return { type: 'plant', hand: best };
     if (!L.guard.ok && P[best] > 0) return { type: 'plant', hand: best };
+    if (CFG.cycleOnExcluded && G.deck.length >= (typeof CFG.cycleExcludedMinDeck === 'object' ? CFG.cycleExcludedMinDeck[G.n] : CFG.cycleExcludedMinDeck) && P.every((x) => x === 0)) {
+      const dump = argmax(me.hand, (s, i) => -futureVal(i) * 3 - (A.isExact(s.known) ? 5 : 0));
+      return { type: 'plant', hand: dump };
+    }
     if (CFG.cycle && G.deck.length >= (typeof CFG.cycleMinDeck === 'object' ? CFG.cycleMinDeck[G.n] : CFG.cycleMinDeck) && P[best] < CFG.gamble && (!CFG.cycleNeedsVerifier || verifierExists(G, p))) {
       const hs = hintOptions(G, p);
       if (!CFG.cycleNeedsNoHint || !hs.length || hs[0].score < 2) {
@@ -810,12 +871,16 @@ function card(c, cls, attrs) {
     '<span class="r">' + A.RANKS[c.rank - 1] + '</span><span class="s">' + A.SYM[c.suit] + '</span><span class="big">' + A.SYM[c.suit] + '</span></button>';
 }
 function back(cls, attrs) { return '<button class="pc back ' + (cls || '') + '" ' + (attrs || '') + ' aria-label="Face-down card"></button>'; }
-function known(k) {
+function notTag(not) {
+  return (not || []).map((key) => '<span class="known not">not ' + esc(A.SEC.find((x) => x.key === key).name) + '</span>').join('');
+}
+function known(k, not) {
+  const nt = notTag(not);
   if (A.isExact(k)) return '<span class="known exact">is ' + A.RANKS[k.rank - 1] + symHTML(k.suit) + '</span>';
   const parts = [];
   if (k.suit) parts.push(symHTML(k.suit));
   if (k.rank) parts.push(A.RANKS[k.rank - 1]);
-  return parts.length ? '<span class="known has">' + parts.join(' ') + '</span>' : '<span class="known">no hints</span>';
+  return parts.length ? '<span class="known has">' + parts.join(' ') + '</span>' + nt : nt || '<span class="known">no hints</span>';
 }
 function secUp(sec) {
   return '<div class="sec up"><span class="pill">ESCAPE PLAN</span><span class="nm">' + esc(sec.name) + '</span>' +
@@ -952,7 +1017,7 @@ function seatHTML(p) {
       const selH = (md === 'hint' && ui.hintSel && ui.hintSel.to === p.idx && ui.hintSel.hand === i) || (sw && isSwapSel(p.idx, i)) ? 'sel ' : '';
       inner = card(s.card, m + fl + selH + (pick ? 'pick' : ''), md === 'hint' ? 'data-act="their" data-p="' + p.idx + '" data-i="' + i + '"' : sw ? 'data-act="swapslot" data-k="player" data-p="' + p.idx + '" data-i="' + i + '"' : '');
     }
-    return '<div class="slot">' + inner + known(s.known) + '</div>';
+    return '<div class="slot">' + inner + known(s.known, s.not) + '</div>';
   }).join('') || '<span class="mono" style="color:var(--muted)">Out of cards</span>';
   return '<div class="seat ' + (p.human ? 'me ' : '') + (turn ? 'turn' : '') + '"><h3>' + avatar(p.idx, 38) + esc(p.name) + (p.human ? ' (you)' : '') +
     (turn ? '<span class="st on">TURN</span>' : '') + '<span class="st ' + (planted ? 'on' : '') + '">' + (planted ? 'PLANTED' : 'NEEDS CARD') + '</span></h3>' +
@@ -1033,6 +1098,7 @@ function helpHTML() {
     '<li>Decks are never reshuffled. When the flashlight deck runs out the Alarm Sounds card is revealed and drawing is locked, so hands shrink as cards are planted.</li></ul></div>' +
     '<div class="box"><h3>Tips</h3><ul>' +
     '<li>Hints are your lifeline. Each tag under a card shows what that player knows about their own card: a suit, a rank, or both. Once both are known, it reads “is 7♥”.</li>' +
+    '<li><b>Silence speaks.</b> When you point at a card, point at one that fits the active obstacle if any teammate has one they aren’t sure about. So if a crewmate points at something else, you can tell that none of your unlabelled cards fit. This version tracks that for you with an amber “not …” tag, and it only appears when it is actually true.</li>' +
     '<li>Planting a card you aren’t sure about can be a smart way to cycle your hand, because a teammate can Distract it if it’s wrong. The catch is that you shouldn’t trigger the Breakthrough yourself on a card you can’t verify.</li>' +
     '<li>It only takes one player who is certain of their own planted card to safely trigger the Breakthrough, as everyone else’s planted cards are known from memory.</li>' +
     '<li>Rank order: A is 1, J is 11, Q is 12 and K is 13. “Odd” includes A, J and K; “Low” is A to 6; “High” is 7 to K.</li></ul></div>' +

@@ -197,3 +197,5 @@ aside { position: sticky; top: 12px; min-width: 0; }
 footer.site { max-width: 1280px; margin: 22px auto 8px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; background: var(--panel); border: 2px solid var(--line); border-radius: 14px; font-size: 13px; font-weight: 600; color: var(--muted); }
 footer.site a { color: var(--green); font-weight: 800; }
 .hero p.demobadge { width: fit-content; max-width: 100%; border-radius: 14px; text-align: center; }
+
+.known.not { color: var(--amber-ink); background: var(--amber-bg); border-color: #f2d28a; }
