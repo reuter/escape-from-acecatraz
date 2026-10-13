@@ -1,0 +1,1035 @@
+<title>Escape from Ace-catraz</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: a night-yard board. Escape plan across the top, table decks in the middle, teammates above your hand, log on the side. */
+:root {
+  --bg: #0e1513; --panel: #16201d; --panel2: #1d2a26; --line: #2b3d38;
+  --fg: #e5f0ec; --muted: #8ea6a0; --mint: #66e6b4; --mint-ink: #06402f; --plan: #aef2d4;
+  --alarm: #ff6b6b; --patrol: #ffc9c9; --patrol-ink: #7a0f0f; --amber: #f0a93b;
+  --card: #fbfaf5; --red: #c8283c; --black: #1b1f24;
+  --back1: #1f3a8a; --back2: #dbe4ff;
+  --f-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --f-body: 'Barlow', system-ui, sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.4 var(--f-body); padding-inline: 16px; padding-block: 12px 40px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--f-display); text-transform: uppercase; letter-spacing: .04em; margin: 0; text-wrap: balance; }
+.mono { font-family: var(--f-mono); }
+.wrap { max-width: 1280px; margin: 0 auto; display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; }
+.main { display: grid; gap: 14px; min-width: 0; }
+@media (max-width: 960px) { .wrap { grid-template-columns: minmax(0, 1fr); } }
+
+header.top { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; }
+header.top h1 { font-size: 30px; font-weight: 800; }
+header.top h1 span { color: var(--mint); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 500 12px var(--f-mono); letter-spacing: .03em; padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); white-space: nowrap; }
+.chip b { color: var(--mint); font-weight: 600; }
+.chip.alarm { border-color: var(--alarm); color: var(--alarm); }
+.chip.alarm b { color: var(--alarm); }
+.btn { border: 1px solid var(--line); background: var(--panel2); padding: 8px 14px; border-radius: 8px; font-weight: 600; }
+.btn:hover:not(:disabled) { border-color: var(--mint); }
+.btn:disabled { opacity: .42; cursor: not-allowed; }
+.btn.primary { background: var(--mint); color: var(--mint-ink); border-color: var(--mint); }
+.btn.danger { background: #3a1818; border-color: #7a2a2a; color: #ffb4b4; }
+.btn.sm { padding: 5px 10px; font-size: 13px; }
+
+section.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.panel > h2 { font-size: 15px; color: var(--muted); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.panel > h2 small { font: 500 11px var(--f-mono); letter-spacing: 0; text-transform: none; }
+
+/* Escape plan */
+.plan { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; align-items: flex-start; }
+.plan.rtl { flex-direction: row-reverse; }
+.obs { flex: 0 0 auto; width: 132px; display: grid; gap: 6px; justify-items: center; }
+.sec { width: 132px; height: 164px; border-radius: 12px; border: 3px solid #000; overflow: hidden; display: grid; grid-template-rows: 1fr; position: relative; }
+.sec.up { background: var(--plan); color: #064a36; text-align: center; padding: 8px 6px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+.sec .pill { font: 800 9px var(--f-body); letter-spacing: .1em; padding: 3px 8px; border-radius: 999px; background: #065f46; color: #d1fae5; }
+.sec .nm { font: 800 24px/1 var(--f-display); letter-spacing: .02em; text-transform: uppercase; }
+.sec .match { background: #fff; border: 1.5px solid #065f46; border-radius: 6px; padding: 4px 4px 5px; font-weight: 700; font-size: 11px; line-height: 1.2; width: 100%; }
+.sec .match i { display: block; font-style: normal; font-size: 8px; letter-spacing: .1em; color: #065f46; }
+.sec .lvl { font: 700 9px var(--f-body); letter-spacing: .08em; border: 1px solid #065f46; border-radius: 999px; padding: 1px 8px; background: #6ee7b7; }
+.sec.down { background: linear-gradient(#17261f, #0f3a2c); color: #6ee7b7; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; text-align: center; }
+.sec.down small { font: 700 9px var(--f-body); letter-spacing: .12em; opacity: .8; }
+.sec.down b { font: 800 24px var(--f-display); letter-spacing: .03em; }
+.sec.down .lk { font-size: 22px; }
+.sec.down.medium { color: #f4c470; } .sec.down.hard { color: #ff8f8f; }
+.obs.active .sec { box-shadow: 0 0 0 3px var(--mint), 0 0 24px rgba(102, 230, 180, .35); }
+.obs.done .sec { height: 56px; opacity: .55; background: var(--panel2); color: var(--muted); display: flex; align-items: center; justify-content: center; font: 700 12px var(--f-mono); border-color: var(--line); }
+.obs .tagline { font: 600 10px var(--f-mono); letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
+.obs.active .tagline { color: var(--mint); }
+.corners { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; min-height: 60px; }
+.corner { display: grid; gap: 2px; justify-items: center; font: 600 10px var(--f-mono); color: var(--muted); }
+.corner.empty .pc { opacity: .18; border-style: dashed; background: transparent; }
+
+/* Cards */
+.pc { width: 52px; height: 74px; border-radius: 7px; border: 1.5px solid #0006; background: var(--card); position: relative; padding: 0; color: var(--black); font-family: var(--f-body); flex: 0 0 auto; user-select: none; }
+.pc.red { color: var(--red); }
+.pc .r { position: absolute; left: 5px; top: 3px; font: 800 15px/1 var(--f-display); }
+.pc .s { position: absolute; left: 5px; top: 18px; font-size: 13px; line-height: 1; }
+.pc .big { position: absolute; inset: 0; display: grid; place-items: center; font-size: 30px; padding-top: 14px; }
+.pc.back { background: repeating-linear-gradient(45deg, var(--back1) 0 5px, #2a4aa8 5px 7px); border: 3px solid var(--back2); }
+.pc.back::after { content: ''; position: absolute; inset: 8px; border: 1.5px solid var(--back2); border-radius: 4px; opacity: .6; }
+.pc.mini { width: 36px; height: 52px; }
+.pc.mini .r { font-size: 11px; left: 3px; top: 2px; } .pc.mini .s { font-size: 9px; left: 3px; top: 13px; } .pc.mini .big { font-size: 20px; padding-top: 10px; }
+.pc.pick { cursor: pointer; box-shadow: 0 0 0 3px var(--mint); transform: translateY(-3px); transition: transform .12s; }
+.pc.pick:hover { transform: translateY(-7px); }
+.pc.sel { box-shadow: 0 0 0 3px var(--amber); transform: translateY(-8px); }
+.pc.match { outline: 3px solid var(--mint); outline-offset: 2px; }
+.pc.flash { animation: flash 1.2s ease 2; }
+@keyframes flash { 50% { box-shadow: 0 0 0 4px var(--amber), 0 0 18px var(--amber); } }
+@media (prefers-reduced-motion: reduce) { .pc.flash { animation: none; box-shadow: 0 0 0 3px var(--amber); } .pc.pick { transition: none; } }
+.hand { display: flex; gap: 10px; flex-wrap: wrap; }
+.slot { display: grid; gap: 4px; justify-items: center; }
+.known { font: 600 11px var(--f-mono); min-height: 16px; padding: 1px 6px; border-radius: 4px; background: var(--panel2); color: var(--muted); white-space: nowrap; }
+.known.has { color: var(--amber); background: #2b2412; }
+.known.exact { color: var(--mint); background: #12302a; }
+.known .rd { color: #ff9aa6; }
+
+/* Table */
+.table { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: flex-start; }
+.pile { display: grid; gap: 4px; justify-items: center; font: 600 11px var(--f-mono); color: var(--muted); text-align: center; }
+.pile .stack { width: 62px; height: 86px; border-radius: 8px; display: grid; place-items: center; font: 800 22px var(--f-display); color: #fff; }
+.pile .stack.flash { background: repeating-linear-gradient(45deg, var(--back1) 0 5px, #2a4aa8 5px 7px); border: 3px solid var(--back2); }
+.pile .stack.patrol { background: #2a1010; border: 3px solid #000; color: #ff8f8f; font-size: 11px; letter-spacing: .08em; text-align: center; line-height: 1.3; }
+.pile .stack.alarm { background: radial-gradient(#d94545, #7d1a1a); border: 3px solid #000; font-size: 12px; letter-spacing: .06em; line-height: 1.2; }
+.pile .stack.empty { background: transparent; border: 2px dashed var(--line); color: var(--line); }
+.guardbox { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; min-width: 0; }
+.pat { width: 132px; height: 92px; border-radius: 10px; border: 3px solid #000; background: var(--patrol); color: var(--patrol-ink); text-align: center; padding: 6px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; }
+.pat .pill { font: 800 9px var(--f-body); letter-spacing: .1em; padding: 2px 8px; border-radius: 999px; background: #991b1b; color: #fee2e2; }
+.pat .nm { font: 800 20px/1 var(--f-display); text-transform: uppercase; }
+.pat .dn { font: 700 9px var(--f-body); letter-spacing: .06em; background: #fff; border: 1.5px solid #991b1b; border-radius: 5px; padding: 2px 4px; width: 100%; }
+.verdict { font: 800 22px var(--f-display); letter-spacing: .06em; text-transform: uppercase; }
+.verdict.pass { color: var(--mint); } .verdict.fail { color: var(--alarm); }
+.banner { flex: 1 1 260px; min-width: 0; border: 1px dashed var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px; align-self: stretch; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.banner b { font: 700 11px var(--f-mono); letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
+.reveal { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+
+/* Players */
+.seats { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.seat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.seat.turn { border-color: var(--mint); box-shadow: 0 0 0 1px var(--mint); }
+.seat h3 { font-size: 18px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.seat h3 .st { font: 600 10px var(--f-mono); letter-spacing: .06em; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.seat h3 .st.on { color: var(--mint); border-color: var(--mint); }
+.seat .hand { gap: 7px; }
+.seat .pc { width: 48px; height: 68px; } .seat .pc .big { font-size: 26px; padding-top: 12px; }
+.me .pc { width: 58px; height: 82px; }
+
+/* Actions */
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.actions .btn { display: grid; gap: 1px; text-align: left; min-width: 118px; }
+.actions .btn small { font: 500 10px var(--f-mono); opacity: .7; letter-spacing: 0; }
+.prompt { margin-top: 12px; padding: 8px 12px; border-radius: 8px; background: var(--panel2); border-left: 4px solid var(--mint); font-weight: 600; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.prompt.wait { border-left-color: var(--muted); color: var(--muted); font-weight: 500; }
+.hintbtns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Tray and log */
+.tray { display: flex; gap: 8px; flex-wrap: wrap; padding: 6px 0 2px; }
+.tray .group { display: grid; gap: 4px; }
+.tray .group > b { font: 600 10px var(--f-mono); letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
+.tray .cards { display: flex; gap: 5px; flex-wrap: wrap; }
+.tray .none { font: 500 12px var(--f-mono); color: var(--muted); }
+.pat.mini { width: 92px; height: 66px; padding: 3px; border-width: 2px; border-radius: 7px; } .pat.mini .nm { font-size: 14px; } .pat.mini .pill, .pat.mini .dn { display: none; }
+.pat.pick { cursor: pointer; box-shadow: 0 0 0 3px var(--mint); }
+.log { max-height: 560px; overflow-y: auto; display: grid; gap: 6px; font-size: 13px; }
+.log div { padding-left: 8px; border-left: 2px solid var(--line); color: var(--muted); }
+.log div.me { border-left-color: var(--mint); color: var(--fg); }
+.log div.sys { border-left-color: var(--amber); }
+aside { position: sticky; top: 12px; min-width: 0; }
+@media (max-width: 960px) { aside { position: static; } .log { max-height: 260px; } }
+
+/* Overlays */
+.overlay { position: fixed; inset: 0; background: rgba(5, 9, 8, .82); display: grid; place-items: center; padding: 16px; z-index: 10; overflow-y: auto; }
+.dialog { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; max-width: 520px; width: 100%; display: grid; gap: 14px; }
+.dialog h2 { font-size: 34px; font-weight: 800; }
+.dialog h2 span { color: var(--mint); }
+.dialog p { margin: 0; color: var(--muted); }
+.field { display: grid; gap: 6px; }
+.field > b { font: 600 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg button { flex: 1 1 0; min-width: 64px; padding: 9px; border: 1px solid var(--line); background: var(--panel2); border-radius: 8px; font-weight: 700; }
+.seg button[aria-pressed="true"] { background: var(--mint); color: var(--mint-ink); border-color: var(--mint); }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.check input { margin-top: 3px; accent-color: var(--mint); }
+.win h2 { color: var(--mint); } .lose h2 { color: var(--alarm); }
+.tools { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+.tools .check { font-size: 13px; color: var(--muted); }
+</style>
+<div id="app"></div>
+<script>
+/* Escape from Ace-catraz: rules engine. Browser global `Ace`, or module.exports in Node. */
+(function (root) {
+'use strict';
+
+const SUITS = ['S', 'H', 'D', 'C'];
+const SYM = { S: '♠', H: '♥', D: '♦', C: '♣' };
+const SUIT_NAME = { S: 'Spades', H: 'Hearts', D: 'Diamonds', C: 'Clubs' };
+const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+const RANK_WORD = ['Ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King'];
+
+const CARDS = [];
+for (let s = 0; s < 4; s++) for (let r = 1; r <= 13; r++) CARDS.push({ id: s * 13 + r - 1, suit: SUITS[s], rank: r });
+const label = (c) => RANKS[c.rank - 1] + SYM[c.suit];
+const idOf = (suit, rank) => SUITS.indexOf(suit) * 13 + rank - 1;
+
+// The 17 security cards. `text` is the MATCH line printed on the card.
+const SEC = [
+  { key: 'odd', name: 'ODD', level: 'easy', text: 'A, 3, 5, 7, 9, J, K', test: (c) => c.rank % 2 === 1 },
+  { key: 'high', name: 'HIGH', level: 'easy', text: 'RANKS 7 THROUGH K', test: (c) => c.rank >= 7 },
+  { key: 'red', name: 'RED', level: 'easy', text: 'HEARTS ♥ OR DIAMONDS ♦', test: (c) => c.suit === 'H' || c.suit === 'D' },
+  { key: 'black', name: 'BLACK', level: 'easy', text: 'SPADES ♠ OR CLUBS ♣', test: (c) => c.suit === 'S' || c.suit === 'C' },
+  { key: 'even', name: 'EVEN', level: 'easy', text: '2, 4, 6, 8, 10, Q', test: (c) => c.rank % 2 === 0 },
+  { key: 'low', name: 'LOW', level: 'easy', text: 'RANKS A THROUGH 6', test: (c) => c.rank <= 6 },
+  { key: 'heart', name: 'HEART', level: 'medium', text: 'HEARTS ♥', test: (c) => c.suit === 'H' },
+  { key: 'diamond', name: 'DIAMOND', level: 'medium', text: 'DIAMONDS ♦', test: (c) => c.suit === 'D' },
+  { key: 'spade', name: 'SPADE', level: 'medium', text: 'SPADES ♠', test: (c) => c.suit === 'S' },
+  { key: 'club', name: 'CLUB', level: 'medium', text: 'CLUBS ♣', test: (c) => c.suit === 'C' },
+  { key: 'face', name: 'FACE', level: 'medium', text: 'JACK, QUEEN, OR KING', test: (c) => c.rank >= 11 },
+  { key: 'a23', name: 'A, 2, 3', level: 'medium', text: 'A, 2, OR 3', test: (c) => c.rank <= 3 },
+  { key: 'qk', name: 'Q, K', level: 'hard', text: 'QUEEN OR KING', test: (c) => c.rank >= 12 },
+  { key: 'aj', name: 'A, J', level: 'hard', text: 'ACE OR JACK', test: (c) => c.rank === 1 || c.rank === 11 },
+  { key: 'c89', name: '8 OR 9', level: 'hard', text: '8 OR 9', test: (c) => c.rank === 8 || c.rank === 9 },
+  { key: 'c67', name: '6 OR 7', level: 'hard', text: '6 OR 7', test: (c) => c.rank === 6 || c.rank === 7 },
+  { key: 'c45', name: '4 OR 5', level: 'hard', text: '4 OR 5', test: (c) => c.rank === 4 || c.rank === 5 },
+];
+const PATROL_LABEL = { easy: 'EXTREME CAUTION', medium: 'MEDIUM', hard: 'RELAXED' };
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffle(arr, rng) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+const isExact = (k) => k.suit != null && k.rank != null;
+const knownMatches = (c, k) => (k.suit == null || c.suit === k.suit) && (k.rank == null || c.rank === k.rank);
+const emptyKnown = () => ({ suit: null, rank: null });
+const mkSlot = (card) => ({ card, known: emptyKnown() });
+const exactSlot = (card) => ({ card, known: { suit: card.suit, rank: card.rank } });
+
+const NAMES = ['Ace', 'Deuce', 'Knuckles', 'Duke'];
+
+function newGame(opts) {
+  opts = opts || {};
+  const n = opts.n || 2;
+  const seed = opts.seed != null ? opts.seed : (Math.random() * 4294967296) >>> 0;
+  const rng = mulberry32(seed);
+  const hardAll = shuffle(SEC.filter((s) => s.level === 'hard'), rng);
+  const easyMed = SEC.filter((s) => s.level !== 'hard');
+  const hardIn = n - 1; // 2p:1, 3p:2, 4p:3
+  const obsDeck = shuffle(easyMed.concat(hardAll.slice(0, hardIn)), rng);
+  const nObs = { 2: 7, 3: 5, 4: 3 }[n] + (opts.extra ? 1 : 0);
+  const obstacles = obsDeck.slice(0, nObs).map((sec, i) => ({ sec, faceUp: false, cleared: false, planted: [] }));
+  const patrol = shuffle(obsDeck.slice(nObs).concat(hardAll.slice(hardIn)), rng);
+  const deck = shuffle(CARDS, rng);
+  const players = [];
+  for (let i = 0; i < n; i++) {
+    const hand = [];
+    for (let k = 0; k < 5; k++) hand.push(mkSlot(deck.pop()));
+    players.push({ idx: i, name: (opts.names && opts.names[i]) || NAMES[i], human: !!(opts.human && opts.human[i]), hand });
+  }
+  const G = {
+    n, seed, rng, opts, players, deck, discard: [], patrol, patrolDiscard: [], obstacles, cur: 0,
+    turn: 0, phase: 'direction', dir: null, pending: null, seen: players.map(() => new Set()),
+    result: null, passStreak: 0, turnCount: 0, log: [], stats: { guards: 0, guardPass: 0, riots: 0, distracts: 0, plants: 0, hints: 0 },
+  };
+  refreshSeen(G);
+  say(G, null, 'Setup: ' + nObs + ' obstacles, ' + patrol.length + ' patrol cards, ' + deck.length + ' flashlight cards left.');
+  return G;
+}
+
+function say(G, p, text) { G.log.push({ n: G.log.length, p, text }); }
+function active(G) { return G.cur < G.obstacles.length ? G.obstacles[G.cur] : null; }
+function alarmVisible(G) { return G.deck.length === 0; }
+function plantedBy(O, p) { return O && O.planted.find((r) => r.player === p); }
+function allPlanted(G) {
+  const O = active(G);
+  if (!O) return false;
+  for (let i = 0; i < G.n; i++) if (O.planted.filter((r) => r.player === i).length !== 1) return false;
+  return true;
+}
+
+function refreshSeen(G) {
+  for (let p = 0; p < G.n; p++) {
+    const s = G.seen[p];
+    for (let q = 0; q < G.n; q++) if (q !== p) for (const sl of G.players[q].hand) s.add(sl.card.id);
+    for (const c of G.discard) s.add(c.id);
+  }
+}
+
+// ---- Knowledge helpers (used by CPU and by the UI for hint tags) ----
+function poolFor(G, p) {
+  const seen = G.seen[p];
+  const ex = new Set(G.players[p].hand.filter((s) => isExact(s.known)).map((s) => idOf(s.known.suit, s.known.rank)));
+  return CARDS.filter((c) => !seen.has(c.id) && !ex.has(c.id));
+}
+function handCandidates(G, p, pool) {
+  const hand = G.players[p].hand;
+  pool = pool || poolFor(G, p);
+  const cands = hand.map((s) => (isExact(s.known) ? [CARDS[idOf(s.known.suit, s.known.rank)]] : pool.filter((c) => knownMatches(c, s.known))));
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const singles = new Set(cands.filter((a) => a.length === 1).map((a) => a[0].id));
+    for (let i = 0; i < cands.length; i++) {
+      if (cands[i].length > 1) {
+        const f = cands[i].filter((c) => !singles.has(c.id));
+        if (f.length !== cands[i].length && f.length > 0) { cands[i] = f; changed = true; }
+      }
+    }
+  }
+  return cands;
+}
+// What viewer h can infer about teammate T's candidate pool, using only what h can see.
+function modelPool(G, h, T) {
+  const out = new Set(G.seen[h]);
+  for (const s of G.players[T].hand) out.delete(s.card.id);
+  for (const O of G.obstacles) for (const r of O.planted) if (r.player === T && !isExact(r.known)) out.delete(r.card.id);
+  const ex = new Set(G.players[T].hand.filter((s) => isExact(s.known)).map((s) => idOf(s.known.suit, s.known.rank)));
+  return CARDS.filter((c) => !out.has(c.id) && !ex.has(c.id));
+}
+function plantedCandidates(G, viewer, rec) {
+  if (rec.player !== viewer || isExact(rec.known) || G.seen[viewer].has(rec.card.id)) return [rec.card];
+  return poolFor(G, viewer).filter((c) => knownMatches(c, rec.known));
+}
+
+// ---- Actions ----
+const OK = { ok: true };
+const no = (why) => ({ ok: false, why });
+
+function legal(G) {
+  const p = G.turn, me = G.players[p], O = active(G), L = {};
+  if (G.result) return L;
+  if (G.phase !== 'action') return L;
+  L.plant = plantedBy(O, p) ? no('You already planted a card here.') : !me.hand.length ? no('You have no cards in hand.') : OK;
+  L.guard = !G.deck.length ? no('No flashlight cards left.') : !G.patrol.length ? no('The patrol deck is empty.') : OK;
+  L.distract = !O.planted.length ? no('No planted cards to discard.') : OK;
+  L.riot = G.deck.length < 5 ? no('Needs 5 flashlight cards left to discard.') : OK;
+  const stuck = !L.plant.ok && !L.guard.ok && !L.distract.ok && !L.riot.ok;
+  L.pass = alarmVisible(G) || stuck ? OK : no('Only after the Alarm Sounds card is visible.');
+  return L;
+}
+
+function hasSwapOption(G) {
+  const hands = G.players.reduce((n, q) => n + q.hand.length, 0);
+  return hands >= 1 && hands + G.discard.length >= 2;
+}
+function locOf(G, l) {
+  if (!l) return null;
+  if (l.kind === 'discard') return G.discard[l.index] ? { kind: 'discard', index: l.index } : null;
+  if (l.kind === 'player') { const q = G.players[l.player]; return q && q.hand[l.hand] ? { kind: 'player', player: l.player, hand: l.hand } : null; }
+  return null;
+}
+
+function apply(G, a) {
+  if (G.result) return no('Game over.');
+  const p = G.turn, me = G.players[p], O = active(G);
+  const ph = G.phase;
+  const L = ph === 'action' ? legal(G) : null;
+  switch (a.type) {
+    case 'direction': {
+      if (ph !== 'direction') return no('The direction is already chosen.');
+      if (a.dir !== 'ltr' && a.dir !== 'rtl') return no('Pick left to right or right to left.');
+      G.dir = a.dir;
+      if (a.dir === 'rtl') G.obstacles.reverse();
+      G.obstacles[0].faceUp = true;
+      if (G.obstacles[1]) G.obstacles[1].faceUp = true;
+      say(G, p, me.name + ' leads the crew ' + (a.dir === 'ltr' ? 'left to right' : 'right to left') + '. The first two obstacles are flipped.');
+      G.phase = 'action'; return OK;
+    }
+    case 'plant': {
+      if (ph !== 'action' || !L.plant.ok) return no(L && L.plant ? L.plant.why : 'Not allowed now.');
+      if (!(a.hand >= 0 && a.hand < me.hand.length)) return no('Pick a card in your hand.');
+      const slot = me.hand.splice(a.hand, 1)[0];
+      O.planted.push({ player: p, card: slot.card, known: Object.assign({}, slot.known) });
+      if (isExact(slot.known)) G.seen[p].add(slot.card.id);
+      G.stats.plants++;
+      say(G, p, me.name + ' plants a card face-down at the active obstacle.');
+      if (G.deck.length) { me.hand.push(mkSlot(G.deck.pop())); say(G, p, me.name + ' draws a flashlight card.'); }
+      else say(G, p, 'Drawing is locked.');
+      G.passStreak = 0; G.phase = 'post'; break;
+    }
+    case 'guard': {
+      if (ph !== 'action' || !L.guard.ok) return no(L && L.guard ? L.guard.why : 'Not allowed now.');
+      const pat = G.patrol.pop(), fl = G.deck.pop();
+      const passed = !pat.test(fl); // patrol side says "do not match"
+      G.patrolDiscard.push(pat); G.discard.push(fl);
+      G.stats.guards++; G.passStreak = 0;
+      G.lastGuard = { patrol: pat, flash: fl, pass: passed, by: p };
+      say(G, p, me.name + ' flips ' + label(fl) + ' vs patrol NOT ' + pat.name + ': ' + (passed ? 'PASS' : 'FAIL (stay silent)') + '.');
+      if (passed) {
+        G.stats.guardPass++;
+        const hasTarget = G.players.some((q) => q.idx !== p && q.hand.length);
+        G.phase = hasTarget ? 'hint' : 'post';
+      } else G.phase = 'post';
+      break;
+    }
+    case 'hint': {
+      if (ph !== 'hint') return no('Not allowed now.');
+      const T = G.players[a.to];
+      if (!T || a.to === p) return no('Pick a teammate.');
+      const slot = T.hand[a.hand];
+      if (!slot) return no('Pick a card in their hand.');
+      if (a.dim !== 'suit' && a.dim !== 'rank') return no('Choose suit or rank.');
+      slot.known[a.dim] = slot.card[a.dim];
+      G.stats.hints++;
+      const txt = a.dim === 'suit' ? 'a ' + SUIT_NAME[slot.card.suit].slice(0, -1) : 'a ' + RANK_WORD[slot.card.rank - 1];
+      say(G, p, me.name + ' points at ' + T.name + "'s card " + (a.hand + 1) + ': it is ' + (a.dim === 'suit' ? 'a ' + SUIT_NAME[slot.card.suit] + ' card' : txt) + '.');
+      G.lastHint = { by: p, to: a.to, hand: a.hand, dim: a.dim };
+      G.phase = 'post'; break;
+    }
+    case 'distract': {
+      if (ph !== 'action' || !L.distract.ok) return no(L && L.distract ? L.distract.why : 'Not allowed now.');
+      const i = O.planted.findIndex((r) => r.player === a.player);
+      if (i < 0) return no('Pick a planted card.');
+      const rec = O.planted.splice(i, 1)[0];
+      G.discard.push(rec.card);
+      G.stats.distracts++; G.passStreak = 0;
+      say(G, p, me.name + ' creates a distraction: ' + G.players[rec.player].name + "'s planted card is discarded face-up (" + label(rec.card) + ').');
+      G.phase = G.patrolDiscard.length ? 'distractPatrol' : 'post';
+      break;
+    }
+    case 'distractPatrol': {
+      if (ph !== 'distractPatrol') return no('Not allowed now.');
+      const pc = G.patrolDiscard[a.index];
+      if (!pc) return no('Pick a patrol card from the discard.');
+      G.patrolDiscard.splice(a.index, 1);
+      G.patrol = shuffle(G.patrol.concat([pc]), G.rng);
+      say(G, p, me.name + ' shuffles patrol card NOT ' + pc.name + ' back into the patrol deck.');
+      G.phase = 'post'; break;
+    }
+    case 'riot': {
+      if (ph !== 'action' || !L.riot.ok) return no(L && L.riot ? L.riot.why : 'Not allowed now.');
+      const out = [];
+      for (let k = 0; k < 5 && G.deck.length; k++) { const c = G.deck.pop(); G.discard.push(c); out.push(c); }
+      G.stats.riots++; G.passStreak = 0;
+      say(G, p, me.name + ' starts a riot and discards ' + out.map(label).join(' ') + (alarmVisible(G) ? ' (the Alarm Sounds!)' : '') + '.');
+      G.phase = hasSwapOption(G) ? 'riotSwap' : 'post';
+      break;
+    }
+    case 'riotSwap': {
+      if (ph !== 'riotSwap') return no('Not allowed now.');
+      const la = locOf(G, a.a), lb = locOf(G, a.b);
+      if (!la || !lb) return no('Pick two cards to swap.');
+      if (la.kind === 'discard' && lb.kind === 'discard') return no('Pick at least one card from a hand.');
+      if (la.kind === lb.kind && (la.kind === 'discard' ? la.index === lb.index : la.player === lb.player && la.hand === lb.hand)) return no('Pick two different cards.');
+      const txt = (l) => (l.kind === 'discard' ? 'the discard pile' : G.players[l.player].name + "'s card " + (l.hand + 1));
+      if (la.kind === 'player' && lb.kind === 'player') {
+        const P = G.players[la.player], Q = G.players[lb.player];
+        const sa = P.hand[la.hand], sb = Q.hand[lb.hand];
+        if (la.player === lb.player) {
+          P.hand[la.hand] = sb; P.hand[lb.hand] = sa; // hints travel with the cards
+          say(G, p, me.name + ' swaps two cards in ' + P.name + "'s hand" + (P.human ? '.' : ' (' + label(sa.card) + ' and ' + label(sb.card) + ').'));
+        } else {
+          P.hand[la.hand] = exactSlot(sb.card); Q.hand[lb.hand] = exactSlot(sa.card);
+          G.seen[la.player].add(sb.card.id); G.seen[lb.player].add(sa.card.id);
+          say(G, p, me.name + ' swaps ' + txt(la) + ' (' + label(sa.card) + ') with ' + txt(lb) + ' (' + label(sb.card) + '). Each now knows the card they received.');
+        }
+      } else {
+        const h = la.kind === 'player' ? la : lb, d = la.kind === 'discard' ? la : lb;
+        const P = G.players[h.player], slot = P.hand[h.hand], dc = G.discard[d.index];
+        G.discard.splice(d.index, 1);
+        G.discard.push(slot.card);
+        P.hand[h.hand] = exactSlot(dc);
+        G.seen[h.player].add(dc.id);
+        say(G, p, me.name + ' swaps ' + txt(h) + ' (' + label(slot.card) + ') with ' + label(dc) + ' from the discard pile.');
+      }
+      G.phase = 'post'; break;
+    }
+    case 'pass': {
+      if (ph !== 'action' || !L.pass.ok) return no(L && L.pass ? L.pass.why : 'Not allowed now.');
+      G.passStreak++;
+      say(G, p, me.name + ' passes.');
+      G.phase = 'post'; break;
+    }
+    case 'breakthrough': {
+      if (ph !== 'post') return no('Not allowed now.');
+      if (!allPlanted(G)) return no('Every player needs exactly one planted card.');
+      const bad = O.planted.filter((r) => !O.sec.test(r.card));
+      say(G, p, me.name + ' goes for a breakthrough! Revealed: ' + O.planted.map((r) => G.players[r.player].name + ' ' + label(r.card)).join(', ') + '.');
+      G.lastBreak = { ok: !bad.length, obstacle: G.cur };
+      if (bad.length) {
+        G.result = { won: false, reason: 'The breakthrough failed. ' + label(bad[0].card) + ' did not meet "' + O.sec.text + '". The alarm is tripped.' };
+        G.phase = 'over'; refreshSeen(G); return OK;
+      }
+      O.cleared = true; G.cur++;
+      if (G.cur >= G.obstacles.length) {
+        G.result = { won: true, reason: 'Every obstacle is cleared. Freedom!' };
+        G.phase = 'over'; refreshSeen(G); return OK;
+      }
+      G.obstacles[G.cur].faceUp = true;
+      if (G.obstacles[G.cur + 1]) G.obstacles[G.cur + 1].faceUp = true;
+      say(G, p, 'Obstacle cleared. ' + (G.obstacles.length - G.cur) + ' to go.');
+      refreshSeen(G);
+      return endTurn(G);
+    }
+    case 'end': {
+      if (ph !== 'post') return no('Not allowed now.');
+      refreshSeen(G);
+      return endTurn(G);
+    }
+    default: return no('Unknown action.');
+  }
+  refreshSeen(G);
+  return OK;
+}
+
+function endTurn(G) {
+  G.turnCount++;
+  if (G.players.every((q) => !q.hand.length) && G.cur < G.obstacles.length) {
+    G.result = { won: false, reason: 'Everyone is out of cards and obstacles remain. Back to your cells.' };
+    G.phase = 'over'; return OK;
+  }
+  if (G.passStreak >= G.n) {
+    G.result = { won: false, reason: 'Nobody can make progress. Back to your cells.' };
+    G.phase = 'over'; return OK;
+  }
+  if (G.turnCount > 600) {
+    G.result = { won: false, reason: 'Turn cap reached.' };
+    G.phase = 'over'; return OK;
+  }
+  G.turn = (G.turn + 1) % G.n;
+  G.phase = 'action';
+  return OK;
+}
+
+const api = {
+  SUITS, SYM, SUIT_NAME, RANKS, RANK_WORD, CARDS, SEC, PATROL_LABEL, NAMES,
+  label, idOf, isExact, knownMatches, mulberry32, shuffle,
+  newGame, apply, legal, active, alarmVisible, allPlanted, plantedBy, hasSwapOption,
+  poolFor, handCandidates, modelPool, plantedCandidates,
+};
+if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Ace = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+/* CPU crewmates for Escape from Ace-catraz. They only use what a real player could see. */
+(function (root) {
+'use strict';
+const A = typeof require !== 'undefined' ? require('./engine.js') : root.Ace;
+const GAMBLE = 0.45; // plant an unverified card at or above this chance of matching
+
+const frac = (cs, test) => { if (!cs.length) return 0; let m = 0; for (const c of cs) if (test(c)) m++; return m / cs.length; };
+const allPass = (cs, test) => cs.length > 0 && cs.every(test);
+const argmax = (arr, f) => { let bi = -1, bv = -Infinity; arr.forEach((x, i) => { const v = f(x, i); if (v > bv) { bv = v; bi = i; } }); return bi; };
+
+// Does any other player look able to verify (own card certain from the team's view)?
+function verifierExists(G, p) {
+  const O = A.active(G), test = O.sec.test;
+  for (const q of G.players) {
+    if (q.idx === p) continue;
+    const rec = A.plantedBy(O, q.idx);
+    const pool = A.modelPool(G, p, q.idx);
+    if (rec) {
+      const cs = A.isExact(rec.known) ? [rec.card] : pool.filter((c) => A.knownMatches(c, rec.known));
+      if (allPass(cs, test)) return true;
+    } else {
+      const cands = A.handCandidates(G, q.idx, pool);
+      if (cands.some((cs) => allPass(cs, test))) return true;
+    }
+  }
+  return false;
+}
+
+// Rank every hint this player could give a teammate, by how much it helps the crew.
+function hintOptions(G, p) {
+  const O = A.active(G), N = G.obstacles[G.cur + 1];
+  const out = [];
+  for (const T of G.players) {
+    if (T.idx === p || !T.hand.length) continue;
+    const pool = A.modelPool(G, p, T.idx);
+    const c0 = A.handCandidates(G, T.idx, pool);
+    const tPlanted = !!A.plantedBy(O, T.idx);
+    const certainBefore = c0.some((cs) => allPass(cs, O.sec.test));
+    const certNBefore = N ? c0.some((cs) => allPass(cs, N.sec.test)) : false;
+    const pBefore = c0.reduce((m, cs) => Math.max(m, frac(cs, O.sec.test)), 0);
+    T.hand.forEach((slot, k) => {
+      if (A.isExact(slot.known)) return;
+      for (const dim of ['suit', 'rank']) {
+        if (slot.known[dim] != null) continue;
+        const nk = Object.assign({}, slot.known); nk[dim] = slot.card[dim];
+        const cs1 = c0[k].filter((c) => A.knownMatches(c, nk));
+        if (!cs1.length || cs1.length === c0[k].length) continue;
+        let score = 0;
+        const m1 = frac(cs1, O.sec.test);
+        if (!tPlanted) {
+          if (m1 === 1) score += certainBefore ? 1 : 10;
+          else {
+            const pAfter = c0.reduce((m, cs, i) => Math.max(m, i === k ? m1 : frac(cs, O.sec.test)), 0);
+            score += 4 * Math.max(0, pAfter - pBefore);
+            if (m1 === 0) score += 0.3; // tells them to keep their hands off this one
+          }
+        }
+        if (N && frac(cs1, N.sec.test) === 1) score += certNBefore ? 0.3 : 2.5;
+        score += 0.5 * (1 - cs1.length / c0[k].length);
+        out.push({ score, to: T.idx, hand: k, dim });
+      }
+    });
+  }
+  return out.sort((a, b) => b.score - a.score);
+}
+
+function decideHint(G, p) {
+  const opts = hintOptions(G, p);
+  if (opts.length) { const o = opts[0]; return { type: 'hint', to: o.to, hand: o.hand, dim: o.dim }; }
+  // Forced to hint something: give any new fact, otherwise repeat one.
+  for (const T of G.players) {
+    if (T.idx === p) continue;
+    for (let k = 0; k < T.hand.length; k++) {
+      for (const dim of ['rank', 'suit']) if (T.hand[k].known[dim] == null) return { type: 'hint', to: T.idx, hand: k, dim };
+    }
+  }
+  const T = G.players.find((q) => q.idx !== p && q.hand.length);
+  return { type: 'hint', to: T.idx, hand: 0, dim: 'rank' };
+}
+
+function decideAction(G, p) {
+  const me = G.players[p], O = A.active(G), L = A.legal(G), test = O.sec.test, N = G.obstacles[G.cur + 1];
+  const myRec = A.plantedBy(O, p);
+
+  // 1. Remove any planted card we know will fail.
+  for (const rec of O.planted) {
+    const cs = A.plantedCandidates(G, p, rec);
+    if (cs.length && cs.every((c) => !test(c)) && L.distract.ok) return { type: 'distract', player: rec.player };
+  }
+
+  const cands = A.handCandidates(G, p);
+  const P = cands.map((cs) => frac(cs, test));
+  const futureVal = (i) => (N ? frac(cands[i], N.sec.test) : 0);
+
+  // 2. Plant.
+  if (!myRec && L.plant.ok) {
+    const best = argmax(me.hand, (s, i) => P[i] * 10 - futureVal(i));
+    if (P[best] === 1) return { type: 'plant', hand: best };
+    if (P[best] >= GAMBLE && verifierExists(G, p)) return { type: 'plant', hand: best };
+    if (!L.guard.ok && P[best] > 0) return { type: 'plant', hand: best };
+  }
+
+  // 3. Guard check when a useful hint is on offer.
+  const hints = hintOptions(G, p);
+  if (L.guard.ok && hints.length && hints[0].score >= 2) return { type: 'guard' };
+
+  // 4. Riot when I need a fresh card and no teammate can help.
+  if (!myRec && me.hand.length && L.riot.ok && G.deck.length >= 6) {
+    const best = Math.max(0, ...P);
+    const pAny = 1 - P.reduce((a, x) => a * (1 - x), 1);
+    if (best < GAMBLE && pAny < 0.55) return { type: 'riot' };
+  }
+
+  // 5. Idle: a guard check may still earn a useful hint.
+  if (L.guard.ok) return { type: 'guard' };
+  if (L.pass.ok) return { type: 'pass' };
+  if (L.riot.ok) return { type: 'riot' };
+  if (L.distract.ok) return { type: 'distract', player: O.planted[0].player };
+  if (L.plant.ok) return { type: 'plant', hand: argmax(me.hand, (s, i) => P[i]) };
+  return { type: 'pass' };
+}
+
+function decideSwap(G, p) {
+  const O = A.active(G), N = G.obstacles[G.cur + 1];
+  // What each player knows about their own cards, as far as I can tell.
+  const info = G.players.map((q) => {
+    const mine = q.idx === p;
+    const cands = A.handCandidates(G, q.idx, mine ? undefined : A.modelPool(G, p, q.idx));
+    return {
+      planted: !!A.plantedBy(O, q.idx),
+      certO: cands.map((cs) => allPass(cs, O.sec.test)),
+      certN: cands.map((cs) => (N ? allPass(cs, N.sec.test) : false)),
+      // chance each card matches, from my point of view (my own cards are hidden from me)
+      pm: q.hand.map((s, i) => (mine ? frac(cands[i], O.sec.test) : O.sec.test(s.card) ? 1 : 0)),
+      pn: q.hand.map((s, i) => (!N ? 0 : mine ? frac(cands[i], N.sec.test) : N.sec.test(s.card) ? 1 : 0)),
+    };
+  });
+  const loc = (kind, a, b) => {
+    if (kind === 'discard') { const c = G.discard[a]; return { l: { kind, index: a }, owner: null, slot: -1, pm: O.sec.test(c) ? 1 : 0, pn: N && N.sec.test(c) ? 1 : 0, certO: false }; }
+    const I = info[a];
+    return { l: { kind, player: a, hand: b }, owner: a, slot: b, pm: I.pm[b], pn: I.pn[b], certO: I.certO[b] };
+  };
+  const readyO = (I) => I.certO.some(Boolean), readyN = (I) => I.certN.some(Boolean);
+  const gain = (owner, inc, out) => {
+    const I = info[owner];
+    let v = 0;
+    if (!I.planted) {
+      v += inc.pm * (readyO(I) ? 1 : 10);
+      if (out.certO) v -= I.certO.some((c, i) => c && i !== out.slot) ? 1 : 10;
+      else v -= 1.5 * out.pm;
+    }
+    if (N) { v += inc.pn * (readyN(I) ? 0.3 : 2.5); v -= 0.8 * out.pn; }
+    return v;
+  };
+  const spots = [];
+  G.players.forEach((q) => q.hand.forEach((s, k) => spots.push(loc('player', q.idx, k))));
+  const discs = G.discard.map((c, i) => loc('discard', i));
+  let best = null;
+  const consider = (x, y, score) => { if (!best || score > best.score) best = { score, a: x.l, b: y.l }; };
+  for (let i = 0; i < spots.length; i++) {
+    for (let j = i + 1; j < spots.length; j++) {
+      const x = spots[i], y = spots[j];
+      consider(x, y, x.owner === y.owner ? 0 : gain(x.owner, y, x) + gain(y.owner, x, y));
+    }
+    for (const d of discs) consider(spots[i], d, gain(spots[i].owner, d, spots[i]) - 0.01);
+  }
+  return { type: 'riotSwap', a: best.a, b: best.b };
+}
+
+function decidePatrolPick(G, p) {
+  const pool = A.poolFor(G, p);
+  const idx = argmax(G.patrolDiscard, (pc) => frac(pool, (c) => !pc.test(c)));
+  return { type: 'distractPatrol', index: idx };
+}
+
+function decidePost(G, p) {
+  if (!A.allPlanted(G)) return { type: 'end' };
+  const O = A.active(G);
+  let pAll = 1;
+  for (const rec of O.planted) pAll *= frac(A.plantedCandidates(G, p, rec), O.sec.test);
+  if (pAll > 0.9999) return { type: 'breakthrough' };
+  if (A.alarmVisible(G) && pAll >= 0.34) return { type: 'breakthrough' };
+  return { type: 'end' };
+}
+
+function decideDirection(G) {
+  // Tackle the hardest locks first, while the flashlight deck is full.
+  const w = { easy: 1, medium: 2, hard: 3 };
+  const n = G.obstacles.length;
+  const score = (order) => order.reduce((s, o, i) => s + w[o.sec.level] * (n - i), 0);
+  const l = score(G.obstacles), r = score(G.obstacles.slice().reverse());
+  return { type: 'direction', dir: r > l ? 'rtl' : 'ltr' };
+}
+
+function decide(G) {
+  const p = G.turn;
+  switch (G.phase) {
+    case 'direction': return decideDirection(G);
+    case 'action': return decideAction(G, p);
+    case 'hint': return decideHint(G, p);
+    case 'riotSwap': return decideSwap(G, p);
+    case 'distractPatrol': return decidePatrolPick(G, p);
+    case 'post': return decidePost(G, p);
+  }
+  return null;
+}
+
+const api = { decide, hintOptions, verifierExists, GAMBLE };
+if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.AceCPU = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>
+(function () {
+'use strict';
+const A = window.Ace, CPU = window.AceCPU;
+const app = document.getElementById('app');
+let G = null, timer = null;
+const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, toast: '' };
+try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist']) if (k in s) ui[k] = s[k]; } catch (e) {}
+const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist })); } catch (e) {} };
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const redSuit = (s) => s === 'H' || s === 'D';
+const symHTML = (s) => '<span class="' + (redSuit(s) ? 'rd' : '') + '">' + A.SYM[s] + '</span>';
+const LEVEL = { easy: 'EASY', medium: 'MEDIUM', hard: 'HARD' };
+
+function card(c, cls, attrs) {
+  return '<button class="pc ' + (redSuit(c.suit) ? 'red ' : '') + (cls || '') + '" ' + (attrs || '') + ' aria-label="' + esc(A.label(c)) + '">' +
+    '<span class="r">' + A.RANKS[c.rank - 1] + '</span><span class="s">' + A.SYM[c.suit] + '</span><span class="big">' + A.SYM[c.suit] + '</span></button>';
+}
+function back(cls, attrs) { return '<button class="pc back ' + (cls || '') + '" ' + (attrs || '') + ' aria-label="Face-down card"></button>'; }
+function known(k) {
+  if (A.isExact(k)) return '<span class="known exact">is ' + A.RANKS[k.rank - 1] + symHTML(k.suit) + '</span>';
+  const parts = [];
+  if (k.suit) parts.push(symHTML(k.suit));
+  if (k.rank) parts.push(A.RANKS[k.rank - 1]);
+  return parts.length ? '<span class="known has">' + parts.join(' ') + '</span>' : '<span class="known">no hints</span>';
+}
+function secUp(sec) {
+  return '<div class="sec up"><span class="pill">ESCAPE PLAN</span><span class="nm">' + esc(sec.name) + '</span>' +
+    '<div class="match"><i>MATCH:</i>' + esc(sec.text) + '</div><span class="lvl">' + LEVEL[sec.level] + '</span></div>';
+}
+function patUp(sec, cls, attrs) {
+  return '<div class="pat ' + (cls || '') + '" ' + (attrs || '') + '><span class="pill">GUARD CHECK</span><span class="nm">NOT ' + esc(sec.name) + '</span>' +
+    '<div class="dn">DO NOT MATCH: ' + esc(sec.text) + '</div></div>';
+}
+
+function isSwapSel(pl, i) { const a = ui.swapA; return !!a && a.kind === 'player' && a.player === pl && a.hand === i; }
+function mode() {
+  if (!G || G.result || ui.dialog) return null;
+  if (!G.players[G.turn].human) return null;
+  switch (G.phase) {
+    case 'direction': return 'direction';
+    case 'action': return ui.sel || 'choose';
+    case 'hint': return 'hint';
+    case 'distractPatrol': return 'patrol';
+    case 'riotSwap': return ui.swapA == null ? 'swapA' : 'swapB';
+    case 'post': return 'post';
+  }
+  return null;
+}
+
+function headerHTML() {
+  const alarm = G && A.alarmVisible(G);
+  let chips = '';
+  if (G) {
+    chips = '<span class="chip ' + (alarm ? 'alarm' : '') + '">' + (alarm ? '<b>ALARM SOUNDS</b> drawing locked' : 'Flashlight deck <b>' + G.deck.length + '</b>') + '</span>' +
+      '<span class="chip">Patrol deck <b>' + G.patrol.length + '</b></span>' +
+      '<span class="chip">Cleared <b>' + Math.min(G.cur, G.obstacles.length) + '/' + G.obstacles.length + '</b></span>';
+  }
+  return '<header class="top"><h1>Escape from <span>Ace-catraz</span></h1><div class="chips">' + chips + '</div>' +
+    '<div class="tools"><label class="check"><input type="checkbox" data-act="assist" ' + (ui.assist ? 'checked' : '') + '> Outline cards that match the active obstacle</label>' +
+    '<button class="btn sm" data-act="newgame">New game</button></div></header>';
+}
+
+function planHTML() {
+  const md = mode();
+  const items = G.obstacles.map((O, i) => {
+    let cls = 'obs', tag = 'Locked', face;
+    if (i < G.cur) { cls += ' done'; tag = 'Cleared'; face = '<div class="sec">' + esc(O.sec.name) + ' ✓</div>'; }
+    else {
+      if (G.phase !== 'direction' && i === G.cur) { cls += ' active'; tag = 'Active'; } else if (O.faceUp) tag = 'Next';
+      face = O.faceUp ? secUp(O.sec) : '<div class="sec down ' + O.sec.level + '"><small>LOCK SECURITY LEVEL</small><b>' + LEVEL[O.sec.level] + '</b></div>';
+    }
+    let corners = '';
+    if (i === G.cur && G.phase !== 'direction') {
+      corners = '<div class="corners">' + G.players.map((p) => {
+        const rec = A.plantedBy(O, p.idx);
+        const ini = esc(p.name) + (p.human ? ' (you)' : '');
+        if (!rec) return '<div class="corner empty">' + back('mini') + '<span>' + ini + '</span></div>';
+        const pick = md === 'distract' ? 'pick' : '';
+        return '<div class="corner">' + back('mini ' + pick, pick ? 'data-act="distract-pick" data-p="' + p.idx + '"' : '') + '<span>' + ini + '</span></div>';
+      }).join('') + '</div>';
+    }
+    return '<div class="' + cls + '"><span class="tagline">' + (i + 1) + ' · ' + tag + '</span>' + face + corners + '</div>';
+  });
+  return '<section class="panel"><h2>Escape plan <small>' + (G.dir === 'ltr' ? 'escaping left to right' : G.dir === 'rtl' ? 'escaping right to left' : 'direction not chosen yet') + '</small></h2><div class="plan ' + (G.dir === 'rtl' ? 'rtl' : '') + '">' + items.join('') + '</div></section>';
+}
+
+function tableHTML() {
+  const alarm = A.alarmVisible(G);
+  const flash = alarm ? '<div class="stack alarm">ALARM<br>SOUNDS</div>' : '<div class="stack flash">' + G.deck.length + '</div>';
+  const pat = G.patrol.length ? '<div class="stack patrol">GUARD<br>PATROL<br>' + G.patrol.length + '</div>' : '<div class="stack empty">empty</div>';
+  const lg = G.lastGuard;
+  let guard = '<span class="mono" style="color:var(--muted);font-size:12px">No guard check yet.</span>';
+  if (lg) guard = patUp(lg.patrol) + card(lg.flash) + '<div><div class="verdict ' + (lg.pass ? 'pass' : 'fail') + '">' + (lg.pass ? 'Pass' : 'Fail') + '</div><div class="mono" style="font-size:11px;color:var(--muted)">' + esc(G.players[lg.by].name) + (lg.pass ? ' may give a hint' : ' stays silent') + '</div></div>';
+  const last = G.log.slice(-3).reverse();
+  let rev = '';
+  if (ui.reveal) rev = '<div><b>Last breakthrough: ' + (ui.reveal.ok ? 'success' : 'FAILED') + '</b><div class="reveal">' + ui.reveal.items.map((r) => '<div class="corner">' + card(r.card, 'mini') + '<span>' + esc(G.players[r.player].name) + '</span></div>').join('') + '</div></div>';
+  return '<section class="panel"><h2>The yard <small>flashlight deck, patrol deck, last guard check</small></h2><div class="table">' +
+    '<div class="pile">' + flash + 'flashlight deck</div><div class="pile">' + pat + 'patrol deck</div>' +
+    '<div class="pile"><button class="btn sm" data-act="tray">Discards ' + G.discard.length + ' / ' + G.patrolDiscard.length + '</button></div>' +
+    '<div class="guardbox">' + guard + '</div>' +
+    '<div class="banner"><b>Latest</b>' + last.map((l, i) => '<div style="' + (i ? 'opacity:.6;font-size:13px' : 'font-weight:600') + '">' + esc(l.text) + '</div>').join('') + rev + '</div></div></section>';
+}
+
+function trayHTML() {
+  const md = mode();
+  if (!(ui.tray || md === 'swapA' || md === 'swapB' || md === 'patrol')) return '';
+  const sw = md === 'swapA' || md === 'swapB';
+  const fl = G.discard.length ? G.discard.map((c, i) => card(c, 'mini ' + (sw ? 'pick ' : '') + (sw && ui.swapA && ui.swapA.kind === 'discard' && ui.swapA.index === i ? 'sel' : ''), sw ? 'data-act="swapslot" data-k="discard" data-i="' + i + '"' : '')).join('') : '<span class="none">empty</span>';
+  const pt = G.patrolDiscard.length ? G.patrolDiscard.map((s, i) => patUp(s, 'mini ' + (md === 'patrol' ? 'pick' : ''), md === 'patrol' ? 'data-act="patrol-pick" data-i="' + i + '" role="button" tabindex="0"' : '')).join('') : '<span class="none">empty</span>';
+  return '<section class="panel"><h2>Discard piles <small>face-up, nobody can reshuffle them</small></h2><div class="tray"><div class="group"><b>Flashlight discard</b><div class="cards">' + fl + '</div></div>' +
+    '<div class="group"><b>Patrol discard</b><div class="cards">' + pt + '</div></div></div></section>';
+}
+
+function seatHTML(p) {
+  const md = mode(), O = A.active(G), test = O ? O.sec.test : null;
+  const turn = !G.result && G.turn === p.idx;
+  const planted = O && A.plantedBy(O, p.idx);
+  const slots = p.hand.map((s, i) => {
+    let inner;
+    if (p.human) {
+      const sw = md === 'swapA' || md === 'swapB';
+      const pick = md === 'plant' || sw;
+      const sel = sw && isSwapSel(p.idx, i);
+      inner = back((pick ? 'pick ' : '') + (sel ? 'sel' : '') + (ui.flash && ui.flash.to === p.idx && ui.flash.hand === i ? ' flash' : ''), md === 'plant' ? 'data-act="own" data-i="' + i + '"' : sw ? 'data-act="swapslot" data-k="player" data-p="' + p.idx + '" data-i="' + i + '"' : '');
+    } else {
+      const sw = md === 'swapA' || md === 'swapB';
+      const pick = md === 'hint' || sw;
+      const m = ui.assist && test && test(s.card) ? 'match ' : '';
+      const fl = ui.flash && ui.flash.to === p.idx && ui.flash.hand === i ? 'flash ' : '';
+      const selH = (md === 'hint' && ui.hintSel && ui.hintSel.to === p.idx && ui.hintSel.hand === i) || (sw && isSwapSel(p.idx, i)) ? 'sel ' : '';
+      inner = card(s.card, m + fl + selH + (pick ? 'pick' : ''), md === 'hint' ? 'data-act="their" data-p="' + p.idx + '" data-i="' + i + '"' : sw ? 'data-act="swapslot" data-k="player" data-p="' + p.idx + '" data-i="' + i + '"' : '');
+    }
+    return '<div class="slot">' + inner + known(s.known) + '</div>';
+  }).join('') || '<span class="mono" style="color:var(--muted)">Out of cards</span>';
+  return '<div class="seat ' + (p.human ? 'me ' : '') + (turn ? 'turn' : '') + '"><h3>' + esc(p.name) + (p.human ? ' (you)' : '') +
+    (turn ? '<span class="st on">TURN</span>' : '') + '<span class="st ' + (planted ? 'on' : '') + '">' + (planted ? 'PLANTED' : 'NEEDS CARD') + '</span></h3>' +
+    '<div class="hand">' + slots + '</div></div>';
+}
+
+function controlsHTML() {
+  if (G.result) return '';
+  const me = G.players[0], md = mode(), cur = G.players[G.turn];
+  if (!md) return '<div class="prompt wait"><span>' + esc(cur.name) + ' is thinking…</span></div>';
+  const L = A.legal(G);
+  const O = A.active(G);
+  const b = (act, name, key, sub) => {
+    const l = L[key];
+    return '<button class="btn" data-act="' + act + '" ' + (l && l.ok ? '' : 'disabled title="' + esc(l ? l.why : '') + '"') + '>' + name + '<small>' + esc(l && !l.ok ? l.why : sub) + '</small></button>';
+  };
+  const cancel = '<button class="btn sm" data-act="cancel">Cancel</button>';
+  switch (md) {
+    case 'choose':
+      return '<div class="prompt"><span>Your turn, ' + esc(me.name) + '. Choose one action.</span></div><div class="actions">' +
+        b('a-plant', 'Play my part', 'plant', 'plant a blind card, then draw') + b('a-guard', 'Guard check', 'guard', 'pass to give a hint') +
+        b('a-distract', 'Distract', 'distract', 'discard a planted card') + b('a-riot', 'Riot', 'riot', 'discard 5, then swap') + b('a-pass', 'Pass', 'pass', 'alarm only') + '</div>';
+    case 'direction': {
+      const seq = (arr) => arr.map((o) => LEVEL[o.sec.level]).join(' \u2192 ');
+      return '<div class="prompt"><span>Check the lock levels, then choose which end the crew starts from.</span><div class="hintbtns">' +
+        '<button class="btn" data-act="dir" data-v="ltr">Start from the left<small style="display:block;font:500 10px var(--f-mono)">' + seq(G.obstacles) + '</small></button>' +
+        '<button class="btn" data-act="dir" data-v="rtl">Start from the right<small style="display:block;font:500 10px var(--f-mono)">' + seq(G.obstacles.slice().reverse()) + '</small></button></div></div>';
+    }
+    case 'plant': return '<div class="prompt"><span>Pick a card to plant. You cannot look at it, so go by the hints.</span>' + cancel + '</div>';
+    case 'distract': return '<div class="prompt"><span>Pick a planted card at the active obstacle to discard.</span>' + cancel + '</div>';
+    case 'hint': {
+      if (!ui.hintSel) return '<div class="prompt"><span>You passed the guard check. Point at a teammate’s card to give a hint.</span></div>';
+      const T = G.players[ui.hintSel.to], sl = T.hand[ui.hintSel.hand], c = sl.card;
+      return '<div class="prompt"><span>Tell ' + esc(T.name) + ' about card ' + (ui.hintSel.hand + 1) + ':</span><div class="hintbtns">' +
+        '<button class="btn" data-act="hint-dim" data-dim="suit" ' + (sl.known.suit ? 'disabled' : '') + '>Its suit: ' + symHTML(c.suit) + ' ' + A.SUIT_NAME[c.suit] + '</button>' +
+        '<button class="btn" data-act="hint-dim" data-dim="rank" ' + (sl.known.rank ? 'disabled' : '') + '>Its rank: ' + A.RANK_WORD[c.rank - 1] + '</button></div></div>';
+    }
+    case 'patrol': return '<div class="prompt"><span>Pick a patrol card from the discard to shuffle back into the patrol deck.</span></div>';
+    case 'swapA': return '<div class="prompt"><span>Riot! Swap any two cards. Pick the first: a card in any hand (yours or a teammate\u2019s) or in the discard pile.</span></div>';
+    case 'swapB': return '<div class="prompt"><span>Now pick the second card to swap with it. At least one must be from a hand.</span><button class="btn sm" data-act="swapreset">Change first card</button></div>';
+    case 'post': {
+      const can = A.allPlanted(G);
+      return '<div class="prompt"><span>' + (can ? 'Everyone has planted a card. Break through now?' : 'Action done.') + '</span><div class="hintbtns">' +
+        (can ? '<button class="btn primary" data-act="breakthrough">Breakthrough</button>' : '') + '<button class="btn" data-act="end">End turn</button></div></div>';
+    }
+  }
+  return '';
+}
+
+function logHTML() {
+  return '<aside><section class="panel"><h2>Log</h2><div class="log" id="log">' + G.log.map((l) => '<div class="' + (l.p === 0 ? 'me' : l.p == null ? 'sys' : '') + '">' + esc(l.text) + '</div>').join('') + '</div></section></aside>';
+}
+
+function dialogHTML() {
+  if (ui.dialog === 'setup') {
+    const segN = [2, 3, 4].map((n) => '<button data-act="setn" data-v="' + n + '" aria-pressed="' + (ui.n === n) + '">' + n + ' players</button>').join('');
+    const obs = { 2: 7, 3: 5, 4: 3 }[ui.n] + (ui.extra ? 1 : 0);
+    const segS = [['Fast', 350], ['Normal', 800], ['Slow', 1500]].map((d) => '<button data-act="setspeed" data-v="' + d[1] + '" aria-pressed="' + (ui.speed === d[1]) + '">' + d[0] + '</button>').join('');
+    return '<div class="overlay"><div class="dialog"><h2>Escape from <span>Ace-catraz</span></h2>' +
+      '<p>You are Ace. You can see every crewmate’s cards but never your own. The CPU inmates work from the same information you have.</p>' +
+      '<div class="field"><b>Crew size</b><div class="seg">' + segN + '</div><p class="mono" style="font-size:12px">' + obs + ' obstacles, ' + (ui.n - 1) + ' extra HARD card' + (ui.n > 2 ? 's' : '') + ' shuffled in</p></div>' +
+      '<label class="check"><input type="checkbox" data-act="extra" ' + (ui.extra ? 'checked' : '') + '> Add one obstacle (harder, per the rules tip)</label>' +
+      '<div class="field"><b>CPU speed</b><div class="seg">' + segS + '</div></div>' +
+      '<button class="btn primary" data-act="start">Start the escape</button></div></div>';
+  }
+  if (G && G.result && !ui.endSeen) {
+    const w = G.result.won;
+    const done = Math.min(G.cur, G.obstacles.length);
+    return '<div class="overlay"><div class="dialog ' + (w ? 'win' : 'lose') + '"><h2>' + (w ? 'Freedom!' : 'Back to your cells') + '</h2><p style="color:var(--fg)">' + esc(G.result.reason) + '</p>' +
+      '<p class="mono" style="font-size:12px">Obstacles cleared ' + done + '/' + G.obstacles.length + ' · guard checks ' + G.stats.guards + ' (' + G.stats.guardPass + ' passed) · hints ' + G.stats.hints + ' · riots ' + G.stats.riots + ' · distractions ' + G.stats.distracts + '</p>' +
+      '<div class="actions"><button class="btn primary" data-act="again">Play again</button><button class="btn" data-act="newgame">Change setup</button><button class="btn" data-act="closeend">Look at the board</button></div></div></div>';
+  }
+  return '';
+}
+
+function render() {
+  const scroll = document.getElementById('log');
+  const atBottom = !scroll || scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 30;
+  if (!G) { app.innerHTML = headerHTML() + dialogHTML(); return; }
+  const cpus = G.players.filter((p) => !p.human), me = G.players.filter((p) => p.human);
+  app.innerHTML = headerHTML() + '<div class="wrap"><div class="main">' + planHTML() + tableHTML() + trayHTML() +
+    '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats">' + cpus.map(seatHTML).join('') + '</div></section>' +
+    '<section class="panel"><h2>Your hand</h2><div class="seats">' + me.map(seatHTML).join('') + '</div>' + controlsHTML() + '</section></div>' + logHTML() + '</div>' + dialogHTML();
+  const lg = document.getElementById('log');
+  if (lg && atBottom) lg.scrollTop = lg.scrollHeight;
+}
+
+function doApply(a) {
+  const O = A.active(G);
+  const before = a.type === 'breakthrough' && O ? O.planted.map((r) => ({ player: r.player, card: r.card })) : null;
+  const r = A.apply(G, a);
+  if (!r.ok) { console.warn(a, r.why); return r; }
+  ui.flash = a.type === 'hint' ? { to: a.to, hand: a.hand } : null;
+  if (before) ui.reveal = { ok: G.lastBreak.ok, items: before };
+  ui.sel = null; ui.hintSel = null; if (a.type === 'riotSwap') ui.swapA = null;
+  return r;
+}
+
+function schedule() {
+  clearTimeout(timer);
+  if (!G || G.result || ui.dialog) return;
+  const p = G.players[G.turn];
+  if (p.human) {
+    if (G.phase === 'post' && !A.allPlanted(G)) timer = setTimeout(() => { doApply({ type: 'end' }); render(); schedule(); }, 1100);
+    return;
+  }
+  timer = setTimeout(() => {
+    const a = CPU.decide(G);
+    if (!a) return;
+    doApply(a); render(); schedule();
+  }, ui.speed);
+}
+function go(a) { const r = doApply(a); render(); schedule(); return r; }
+
+function startGame() {
+  const human = [true, false, false, false];
+  G = A.newGame({ n: ui.n, extra: ui.extra, human });
+  ui.dialog = null; ui.endSeen = false; ui.sel = null; ui.swapA = null; ui.hintSel = null; ui.reveal = null; ui.flash = null; ui.tray = false;
+  save(); render(); schedule();
+}
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  const d = el.dataset, md = mode();
+  switch (d.act) {
+    case 'setn': ui.n = +d.v; render(); return;
+    case 'dir': go({ type: 'direction', dir: d.v }); return;
+    case 'setspeed': ui.speed = +d.v; save(); render(); return;
+    case 'extra': ui.extra = el.checked; render(); return;
+    case 'assist': ui.assist = el.checked; save(); render(); return;
+    case 'start': case 'again': startGame(); return;
+    case 'newgame': clearTimeout(timer); ui.dialog = 'setup'; render(); return;
+    case 'closeend': ui.endSeen = true; render(); return;
+    case 'tray': ui.tray = !ui.tray; render(); return;
+    case 'cancel': ui.sel = null; render(); return;
+    case 'a-plant': ui.sel = 'plant'; render(); return;
+    case 'a-distract': ui.sel = 'distract'; render(); return;
+    case 'a-guard': go({ type: 'guard' }); return;
+    case 'a-riot': go({ type: 'riot' }); return;
+    case 'a-pass': go({ type: 'pass' }); return;
+    case 'breakthrough': go({ type: 'breakthrough' }); return;
+    case 'end': go({ type: 'end' }); return;
+    case 'own': if (md === 'plant') go({ type: 'plant', hand: +d.i }); return;
+    case 'swapreset': ui.swapA = null; render(); return;
+    case 'swapslot': {
+      if (md !== 'swapA' && md !== 'swapB') return;
+      const l = d.k === 'discard' ? { kind: 'discard', index: +d.i } : { kind: 'player', player: +d.p, hand: +d.i };
+      const a = ui.swapA;
+      if (!a) { ui.swapA = l; render(); return; }
+      const same = a.kind === l.kind && (l.kind === 'discard' ? a.index === l.index : a.player === l.player && a.hand === l.hand);
+      if (same) { ui.swapA = null; render(); return; }
+      if (a.kind === 'discard' && l.kind === 'discard') return;
+      go({ type: 'riotSwap', a, b: l });
+      return;
+    }
+    case 'their':
+      if (md === 'hint') { ui.hintSel = { to: +d.p, hand: +d.i }; render(); }
+      return;
+    case 'hint-dim': if (ui.hintSel) go({ type: 'hint', to: ui.hintSel.to, hand: ui.hintSel.hand, dim: d.dim }); return;
+    case 'distract-pick': if (md === 'distract') go({ type: 'distract', player: +d.p }); return;
+    case 'patrol-pick': if (md === 'patrol') go({ type: 'distractPatrol', index: +d.i }); return;
+  }
+});
+document.addEventListener('keydown', (e) => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.pat[data-act]')) { e.preventDefault(); e.target.click(); }
+});
+
+render();
+})();
+</script>
