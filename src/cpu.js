@@ -2,7 +2,9 @@
 (function (root) {
 'use strict';
 const A = typeof require !== 'undefined' ? require('./engine.js') : root.Ace;
-const GAMBLE = 0.45; // plant an unverified card at or above this chance of matching
+// Tunable CPU behaviour. `gamble`: plant an unverified card at or above this chance of matching.
+// `needVerifier`: only gamble when another player can vouch for the pile. `cycle`: plant a blind card just to draw a new one.
+const CFG = { gamble: 0.45, needVerifier: true, cycle: true, cycleMinDeck: { 2: 20, 3: 20, 4: 99 }, cycleNeedsNoHint: true, cycleNeedsVerifier: true, alarmGamble: true };
 
 const frac = (cs, test) => { if (!cs.length) return 0; let m = 0; for (const c of cs) if (test(c)) m++; return m / cs.length; };
 const allPass = (cs, test) => cs.length > 0 && cs.every(test);
@@ -96,8 +98,16 @@ function decideAction(G, p) {
   if (!myRec && L.plant.ok) {
     const best = argmax(me.hand, (s, i) => P[i] * 10 - futureVal(i));
     if (P[best] === 1) return { type: 'plant', hand: best };
-    if (P[best] >= GAMBLE && verifierExists(G, p)) return { type: 'plant', hand: best };
+    if (P[best] >= CFG.gamble && (!CFG.needVerifier || verifierExists(G, p))) return { type: 'plant', hand: best };
     if (!L.guard.ok && P[best] > 0) return { type: 'plant', hand: best };
+    if (CFG.cycle && G.deck.length >= (typeof CFG.cycleMinDeck === 'object' ? CFG.cycleMinDeck[G.n] : CFG.cycleMinDeck) && P[best] < CFG.gamble && (!CFG.cycleNeedsVerifier || verifierExists(G, p))) {
+      const hs = hintOptions(G, p);
+      if (!CFG.cycleNeedsNoHint || !hs.length || hs[0].score < 2) {
+        // Dump the card that matters least later; teammates will discard it if it is wrong.
+        const dump = argmax(me.hand, (s, i) => -(futureVal(i) * 3 + P[i] * 0.2) - (A.isExact(s.known) ? 5 : 0));
+        return { type: 'plant', hand: dump };
+      }
+    }
   }
 
   // 3. Guard check when a useful hint is on offer.
@@ -108,7 +118,7 @@ function decideAction(G, p) {
   if (!myRec && me.hand.length && L.riot.ok && G.deck.length >= 6) {
     const best = Math.max(0, ...P);
     const pAny = 1 - P.reduce((a, x) => a * (1 - x), 1);
-    if (best < GAMBLE && pAny < 0.55) return { type: 'riot' };
+    if (best < CFG.gamble && pAny < 0.55) return { type: 'riot' };
   }
 
   // 5. Idle: a guard check may still earn a useful hint.
@@ -173,13 +183,26 @@ function decidePatrolPick(G, p) {
   return { type: 'distractPatrol', index: idx };
 }
 
+// Could another player safely break through? (Their own planted card is certain to them and everyone else's card matches.)
+function someoneElseCanBreak(G, p) {
+  const O = A.active(G);
+  for (const q of G.players) {
+    if (q.idx === p) continue;
+    const rec = A.plantedBy(O, q.idx);
+    const cs = A.isExact(rec.known) ? [rec.card] : A.modelPool(G, p, q.idx).filter((c) => A.knownMatches(c, rec.known));
+    if (!allPass(cs, O.sec.test)) continue;
+    if (O.planted.every((r) => r.player === q.idx || O.sec.test(r.card))) return true;
+  }
+  return false;
+}
+
 function decidePost(G, p) {
   if (!A.allPlanted(G)) return { type: 'end' };
   const O = A.active(G);
   let pAll = 1;
   for (const rec of O.planted) pAll *= frac(A.plantedCandidates(G, p, rec), O.sec.test);
   if (pAll > 0.9999) return { type: 'breakthrough' };
-  if (A.alarmVisible(G) && pAll >= 0.34) return { type: 'breakthrough' };
+  if (CFG.alarmGamble && A.alarmVisible(G) && pAll >= 0.34 && !someoneElseCanBreak(G, p)) return { type: 'breakthrough' };
   return { type: 'end' };
 }
 
@@ -205,6 +228,6 @@ function decide(G) {
   return null;
 }
 
-const api = { decide, hintOptions, verifierExists, GAMBLE };
+const api = { decide, hintOptions, verifierExists, CFG };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.AceCPU = api;
 })(typeof window !== 'undefined' ? window : globalThis);
