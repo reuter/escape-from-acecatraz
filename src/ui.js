@@ -33,6 +33,31 @@ function patUp(sec, cls, attrs) {
     '<div class="dn">DO NOT MATCH: ' + esc(sec.text) + '</div></div>';
 }
 
+
+const AV = [
+  { bg: '#f2a516', skin: '#f6c9a0', hair: '#5b3a1e', kind: 'beanie', hat: '#e23d4a' },
+  { bg: '#e23d4a', skin: '#c68a5e', hair: '#222', kind: 'spiky' },
+  { bg: '#1fa38a', skin: '#8d5a3c', hair: '#222', kind: 'bald' },
+  { bg: '#7a4fd1', skin: '#f6d3b3', hair: '#c9822b', kind: 'crown' }
+];
+function avatar(i, size) {
+  const a = AV[i % 4], sz = size || 36;
+  let top = '';
+  if (a.kind === 'beanie') top = '<path d="M20 36 Q20 14 40 14 Q60 14 60 36 Z" fill="' + a.hat + '"/><rect x="18" y="32" width="44" height="8" rx="4" fill="#fff"/><circle cx="40" cy="12" r="4" fill="#fff"/>';
+  else if (a.kind === 'spiky') top = '<path d="M20 36 L22 16 L30 28 L36 10 L42 28 L50 12 L54 28 L60 18 L60 36 Z" fill="' + a.hair + '"/>';
+  else if (a.kind === 'bald') top = '<ellipse cx="32" cy="24" rx="5" ry="3" fill="#fff" opacity=".45" transform="rotate(-30 32 24)"/>';
+  else top = '<path d="M22 30 L22 14 L31 22 L40 10 L49 22 L58 14 L58 30 Z" fill="#f7c928" stroke="#c99a00" stroke-width="2" stroke-linejoin="round"/><rect x="22" y="28" width="36" height="5" fill="#f7c928" stroke="#c99a00" stroke-width="2"/>' + '<path d="M20 40 Q20 30 40 30 Q60 30 60 40 Z" fill="' + a.hair + '" opacity="0"/>';
+  return '<svg class="av" width="' + sz + '" height="' + sz + '" viewBox="0 0 80 80" aria-hidden="true"><defs><clipPath id="avc' + i + '-' + sz + '"><circle cx="40" cy="40" r="40"/></clipPath></defs>' +
+    '<g clip-path="url(#avc' + i + '-' + sz + ')"><rect width="80" height="80" fill="' + a.bg + '"/>' +
+    '<path d="M6 84 Q8 58 40 56 Q72 58 74 84 Z" fill="#fff"/>' +
+    [0, 1, 2, 3, 4].map((k) => '<rect x="' + (10 + k * 14) + '" y="56" width="7" height="26" fill="#222" opacity=".85"/>').join('') +
+    '<rect x="34" y="50" width="12" height="9" fill="' + a.skin + '"/>' +
+    '<ellipse cx="40" cy="36" rx="19" ry="20" fill="' + a.skin + '"/>' + top +
+    '<ellipse cx="33" cy="38" rx="4.6" ry="5.4" fill="#fff"/><ellipse cx="47" cy="38" rx="4.6" ry="5.4" fill="#fff"/>' +
+    '<circle cx="34" cy="39" r="2.5" fill="#222"/><circle cx="48" cy="39" r="2.5" fill="#222"/>' +
+    '<path d="M33 47 Q40 54 47 47" fill="none" stroke="#222" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
+}
+
 function isSwapSel(pl, i) { const a = ui.swapA; return !!a && a.kind === 'player' && a.player === pl && a.hand === i; }
 function mode() {
   if (!G || G.result || ui.dialog) return null;
@@ -56,9 +81,9 @@ function headerHTML() {
       '<span class="chip">Patrol deck <b>' + G.patrol.length + '</b></span>' +
       '<span class="chip">Cleared <b>' + Math.min(G.cur, G.obstacles.length) + '/' + G.obstacles.length + '</b></span>';
   }
-  return '<header class="top"><h1>Escape from <span>Ace-catraz</span></h1><div class="chips">' + chips + '</div>' +
-    '<div class="tools"><label class="check"><input type="checkbox" data-act="assist" ' + (ui.assist ? 'checked' : '') + '> Outline cards that match the active obstacle</label>' +
-    '<button class="btn sm" data-act="newgame">New game</button></div></header>';
+  const bar = '<header class="bar"><h1>Escape from <span class="tag">Ace-catraz!</span></h1><button class="btn sm" data-act="newgame">New game</button></header>';
+  if (!G) return bar;
+  return bar + '<div class="sub"><div class="chips">' + chips + '</div><label class="check"><input type="checkbox" data-act="assist" ' + (ui.assist ? 'checked' : '') + '> Outline cards that match the active obstacle</label></div>';
 }
 
 function planHTML() {
@@ -75,9 +100,9 @@ function planHTML() {
       corners = '<div class="corners">' + G.players.map((p) => {
         const rec = A.plantedBy(O, p.idx);
         const ini = esc(p.name) + (p.human ? ' (you)' : '');
-        if (!rec) return '<div class="corner empty">' + back('mini') + '<span>' + ini + '</span></div>';
+        if (!rec) return '<div class="corner empty">' + back('mini') + '<span class="who">' + avatar(p.idx, 20) + ini + '</span></div>';
         const pick = md === 'distract' ? 'pick' : '';
-        return '<div class="corner">' + back('mini ' + pick, pick ? 'data-act="distract-pick" data-p="' + p.idx + '"' : '') + '<span>' + ini + '</span></div>';
+        return '<div class="corner">' + back('mini ' + pick, pick ? 'data-act="distract-pick" data-p="' + p.idx + '"' : '') + '<span class="who">' + avatar(p.idx, 20) + ini + '</span></div>';
       }).join('') + '</div>';
     }
     return '<div class="' + cls + '"><span class="tagline">' + (i + 1) + ' · ' + tag + '</span>' + face + corners + '</div>';
@@ -136,7 +161,7 @@ function seatHTML(p) {
     }
     return '<div class="slot">' + inner + known(s.known) + '</div>';
   }).join('') || '<span class="mono" style="color:var(--muted)">Out of cards</span>';
-  return '<div class="seat ' + (p.human ? 'me ' : '') + (turn ? 'turn' : '') + '"><h3>' + esc(p.name) + (p.human ? ' (you)' : '') +
+  return '<div class="seat ' + (p.human ? 'me ' : '') + (turn ? 'turn' : '') + '"><h3>' + avatar(p.idx, 38) + esc(p.name) + (p.human ? ' (you)' : '') +
     (turn ? '<span class="st on">TURN</span>' : '') + '<span class="st ' + (planted ? 'on' : '') + '">' + (planted ? 'PLANTED' : 'NEEDS CARD') + '</span></h3>' +
     '<div class="hand">' + slots + '</div></div>';
 }
@@ -193,26 +218,29 @@ function dialogHTML() {
     const segN = [2, 3, 4].map((n) => '<button data-act="setn" data-v="' + n + '" aria-pressed="' + (ui.n === n) + '">' + n + ' players</button>').join('');
     const obs = { 2: 7, 3: 5, 4: 3 }[ui.n] + (ui.extra ? 1 : 0);
     const segS = [['Fast', 350], ['Normal', 800], ['Slow', 1500]].map((d) => '<button data-act="setspeed" data-v="' + d[1] + '" aria-pressed="' + (ui.speed === d[1]) + '">' + d[0] + '</button>').join('');
-    return '<div class="overlay"><div class="dialog"><h2>Escape from <span>Ace-catraz</span></h2>' +
-      '<p>You are Ace. You can see every crewmate’s cards but never your own. The CPU inmates work from the same information you have.</p>' +
-      '<div class="field"><b>Crew size</b><div class="seg">' + segN + '</div><p class="mono" style="font-size:12px">' + obs + ' obstacles, ' + (ui.n - 1) + ' extra HARD card' + (ui.n > 2 ? 's' : '') + ' shuffled in</p></div>' +
+    const fan = [[1, 'S'], [12, 'H'], [1, 'D'], [11, 'C'], [13, 'S']].map((c, k) => '<div class="fc" style="transform:rotate(' + (k - 2) * 9 + 'deg) translateY(' + Math.abs(k - 2) * 4 + 'px)">' + card({ rank: c[0], suit: c[1] }, '', 'tabindex="-1"') + '</div>').join('');
+    return '<div class="overlay"><div class="dialog">' +
+      '<div class="hero"><h2>Escape from <span class="tag">Ace-catraz!</span></h2><div class="fan">' + fan + '</div>' +
+      '<div class="crew">' + [0, 1, 2, 3].map((k) => avatar(k, 44)).join('') + '</div>' +
+      '<p>You are Ace. You can see every crewmate’s cards but never your own.</p></div>' +
+      '<div class="box"><div class="field"><b>Crew size</b><div class="seg">' + segN + '</div><p class="note">' + obs + ' obstacles, ' + (ui.n - 1) + ' extra HARD card' + (ui.n > 2 ? 's' : '') + ' shuffled in</p></div>' +
       '<label class="check"><input type="checkbox" data-act="extra" ' + (ui.extra ? 'checked' : '') + '> Add one obstacle (harder, per the rules tip)</label>' +
       '<div class="field"><b>CPU speed</b><div class="seg">' + segS + '</div></div>' +
-      '<button class="btn primary" data-act="start">Start the escape</button></div></div>';
+      '<button class="btn primary" data-act="start">Start the escape</button></div></div></div>';
   }
   if (ui.notice) {
     const n = ui.notice;
-    return '<div class="overlay"><div class="dialog notice"><h2>' + esc(n.name) + ' <span>planted</span> this card</h2>' +
+    return '<div class="overlay"><div class="dialog notice"><div class="box"><div class="who">' + avatar(n.idx || 0, 56) + '<h2>' + esc(n.name) + ' <span>planted</span> this card</h2></div>' +
       '<div class="xlwrap">' + card(n.card, 'xl') + '</div>' +
       '<p>Placed face-down at the active obstacle (' + esc(n.obs.name) + ': ' + esc(n.obs.text.toLowerCase()) + '). Once it is down, nobody can look at it again.</p>' +
-      '<button class="btn primary" data-act="ack">Got it</button></div></div>';
+      '<button class="btn primary" data-act="ack">Got it</button></div></div></div>';
   }
   if (G && G.result && !ui.endSeen) {
     const w = G.result.won;
     const done = Math.min(G.cur, G.obstacles.length);
-    return '<div class="overlay"><div class="dialog ' + (w ? 'win' : 'lose') + '"><h2>' + (w ? 'Freedom!' : 'Back to your cells') + '</h2><p style="color:var(--fg)">' + esc(G.result.reason) + '</p>' +
-      '<p class="mono" style="font-size:12px">Obstacles cleared ' + done + '/' + G.obstacles.length + ' · guard checks ' + G.stats.guards + ' (' + G.stats.guardPass + ' passed) · hints ' + G.stats.hints + ' · riots ' + G.stats.riots + ' · distractions ' + G.stats.distracts + '</p>' +
-      '<div class="actions"><button class="btn primary" data-act="again">Play again</button><button class="btn" data-act="newgame">Change setup</button><button class="btn" data-act="closeend">Look at the board</button></div></div></div>';
+    return '<div class="overlay"><div class="dialog ' + (w ? 'win' : 'lose') + '"><div class="box"><h2>' + (w ? 'Freedom!' : 'Back to your cells') + '</h2><p>' + esc(G.result.reason) + '</p>' +
+      '<p class="note">Obstacles cleared ' + done + '/' + G.obstacles.length + ' · guard checks ' + G.stats.guards + ' (' + G.stats.guardPass + ' passed) · hints ' + G.stats.hints + ' · riots ' + G.stats.riots + ' · distractions ' + G.stats.distracts + '</p>' +
+      '<div class="actions"><button class="btn primary" data-act="again">Play again</button><button class="btn" data-act="newgame">Change setup</button><button class="btn" data-act="closeend">Look at the board</button></div></div></div></div>';
   }
   return '';
 }
@@ -236,7 +264,7 @@ function doApply(a) {
   let notice = null;
   if (a.type === 'plant') {
     const pl = G.players[G.turn];
-    if (!pl.human && pl.hand[a.hand]) notice = { name: pl.name, card: pl.hand[a.hand].card, obs: O.sec };
+    if (!pl.human && pl.hand[a.hand]) notice = { name: pl.name, card: pl.hand[a.hand].card, obs: O.sec, idx: pl.idx };
   }
   const before = a.type === 'breakthrough' && O ? O.planted.map((r) => ({ player: r.player, card: r.card })) : null;
   const r = A.apply(G, a);
