@@ -5,7 +5,7 @@ const A = typeof require !== 'undefined' ? require('./engine.js') : root.Ace;
 // Tunable CPU behaviour. `gamble`: plant an unverified card at or above this chance of matching.
 // `needVerifier`: only gamble when another player can vouch for the pile. `cycle`: plant a blind card just to draw a new one.
 const CFG = { gamble: 0.45, needVerifier: true, cycle: true, cycleMinDeck: { 2: 20, 3: 20, 4: 99 }, cycleNeedsNoHint: true, cycleNeedsVerifier: true, alarmGamble: true,
-  convention: true,        // when pointing at a card, prefer one that fits the active obstacle (so silence carries meaning)
+  convention: true, conventionBonus: 1.2,        // when pointing at a card, prefer one that fits the active obstacle (so silence carries meaning)
   cycleOnExcluded: true,   // every unresolved card of mine is known not to fit: plant one blind to draw a fresh card
   cycleExcludedMinDeck: { 2: 1, 3: 1, 4: 999 },
   mc: true, mcSamples: 16 }; // mc: weigh plant / guard check / riot by playing each forward in sampled worlds // 4p: the deck is too tight to burn cards cycling
@@ -32,7 +32,20 @@ function verifierExists(G, p) {
   return false;
 }
 
-// Rank every hint this player could give a teammate, by how much it helps the crew.
+// Value of what a player's hand can already prove: a distinct certain card for the active obstacle (if they still have to
+// plant) and a different certain card for the next one. Hints are scored by how much they raise this.
+function coverValue(certO, certN, needO) {
+  const os = needO ? certO.concat([null]) : [null], ns = certN.concat([null]);
+  let best = 0;
+  for (const o of os) for (const n of ns) {
+    if (o != null && n != null && o === n) continue;
+    best = Math.max(best, (o != null ? 10 : 0) + (n != null ? 2.5 : 0));
+  }
+  return best;
+}
+function certSlots(cands, test) { const r = []; cands.forEach((cs, k) => { if (allPass(cs, test)) r.push(k); }); return r; }
+
+// Rank every hint this player could give a teammate, by how much it helps the crew move on.
 function hintOptions(G, p) {
   const O = A.active(G), N = G.obstacles[G.cur + 1];
   const out = [];
@@ -40,9 +53,9 @@ function hintOptions(G, p) {
     if (T.idx === p || !T.hand.length) continue;
     const pool = A.modelPool(G, p, T.idx);
     const c0 = A.handCandidates(G, T.idx, pool);
-    const tPlanted = !!A.plantedBy(O, T.idx);
-    const certainBefore = c0.some((cs) => allPass(cs, O.sec.test));
-    const certNBefore = N ? c0.some((cs) => allPass(cs, N.sec.test)) : false;
+    const needO = !A.plantedBy(O, T.idx);
+    const nTest = N ? N.sec.test : () => false;
+    const before = coverValue(certSlots(c0, O.sec.test), N ? certSlots(c0, nTest) : [], needO);
     const pBefore = c0.reduce((m, cs) => Math.max(m, frac(cs, O.sec.test)), 0);
     T.hand.forEach((slot, k) => {
       if (A.isExact(slot.known)) return;
@@ -51,18 +64,20 @@ function hintOptions(G, p) {
         const nk = Object.assign({}, slot.known); nk[dim] = slot.card[dim];
         const cs1 = c0[k].filter((c) => A.knownMatches(c, nk));
         if (!cs1.length || cs1.length === c0[k].length) continue;
-        let score = 0;
-        const m1 = frac(cs1, O.sec.test);
-        if (!tPlanted) {
-          if (m1 === 1) score += certainBefore ? 1 : 10;
-          else {
-            const pAfter = c0.reduce((m, cs, i) => Math.max(m, i === k ? m1 : frac(cs, O.sec.test)), 0);
-            score += 4 * Math.max(0, pAfter - pBefore);
-            if (m1 === 0) score += 0.3; // tells them to keep their hands off this one
-          }
+        const c1 = c0.slice(); c1[k] = cs1;
+        const after = coverValue(certSlots(c1, O.sec.test), N ? certSlots(c1, nTest) : [], needO);
+        let score = after - before;
+        if (score <= 0 && needO) {
+          const m1 = frac(cs1, O.sec.test);
+          const pAfter = c1.reduce((m, cs) => Math.max(m, frac(cs, O.sec.test)), 0);
+          score += 4 * Math.max(0, pAfter - pBefore);
+          if (m1 === 0 && before < 10) score += 0.3; // tells them to keep their hands off this one
         }
-        if (N && frac(cs1, N.sec.test) === 1) score += certNBefore ? 0.3 : 2.5;
-        score += 0.5 * (1 - cs1.length / c0[k].length);
+        score += 0.5 * (1 - cs1.length / c0[k].length); // the more it narrows, the more it helps later obstacles too
+        // Don't spend a hint re-confirming a card that already answers the active or next obstacle; spread information to cards nobody knows anything about yet, since the hidden obstacles could need any of them.
+        const known0 = slot.known.suit != null || slot.known.rank != null;
+        const settled = (needO && allPass(c0[k], O.sec.test)) || (N && allPass(c0[k], nTest));
+        if (settled) score -= 1.5; else if (!known0) score += 0.5; else score += 0.2;
         out.push({ score, to: T.idx, hand: k, dim });
       }
     });
@@ -84,8 +99,10 @@ function usefulSlots(G, p) {
 function decideHint(G, p) {
   let opts = hintOptions(G, p);
   if (CFG.convention) {
+    // Pointing at a card that fits the active obstacle keeps silence meaningful. It is a tie-breaker: a hint that
+    // actually lets a teammate plant or prepare outranks it.
     const u = usefulSlots(G, p);
-    if (u.size) { const f = opts.filter((o) => u.has(o.to + ':' + o.hand)); if (f.length) opts = f; }
+    if (u.size) opts = opts.map((o) => Object.assign({}, o, { score: o.score + (u.has(o.to + ':' + o.hand) ? CFG.conventionBonus : 0) })).sort((a, b) => b.score - a.score);
   }
   if (opts.length) { const o = opts[0]; return { type: 'hint', to: o.to, hand: o.hand, dim: o.dim }; }
   // Forced to hint something: give any new fact, otherwise repeat one.
