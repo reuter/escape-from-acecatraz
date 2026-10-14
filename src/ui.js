@@ -92,26 +92,31 @@ function headerHTML() {
 
 function planHTML() {
   const md = mode();
-  const items = G.obstacles.map((O, i) => {
-    let cls = 'obs', tag = 'Locked', face;
-    if (i < G.cur) { cls += ' done'; tag = 'Cleared'; face = '<div class="sec">' + esc(O.sec.name) + ' ✓</div>'; }
-    else {
-      if (G.phase !== 'direction' && i === G.cur) { cls += ' active'; tag = 'Active'; } else if (O.faceUp) tag = 'Next';
-      face = O.faceUp ? secUp(O.sec) : '<div class="sec down ' + O.sec.level + '"><small>LOCK SECURITY LEVEL</small><b>' + LEVEL[O.sec.level] + '</b></div>';
-    }
-    let corners = '';
-    if (i === G.cur && G.phase !== 'direction') {
-      corners = '<div class="corners">' + G.players.map((p) => {
-        const rec = A.plantedBy(O, p.idx);
-        const ini = esc(p.name) + (p.human ? ' (you)' : '');
-        if (!rec) return '<div class="corner empty">' + back('mini') + '<span class="who">' + avatar(p.idx, 20) + ini + '</span></div>';
-        const pick = md === 'distract' ? 'pick' : '';
-        return '<div class="corner">' + back('mini ' + pick, pick ? 'data-act="distract-pick" data-p="' + p.idx + '"' : '') + '<span class="who">' + avatar(p.idx, 20) + ini + '</span></div>';
-      }).join('') + '</div>';
-    }
-    return '<div class="' + cls + '"><span class="tagline">' + (i + 1) + ' · ' + tag + '</span>' + face + corners + '</div>';
-  });
-  return '<section class="panel"><h2>Escape plan <small>' + (G.dir === 'ltr' ? 'escaping left to right' : G.dir === 'rtl' ? 'escaping right to left' : 'direction not chosen yet') + '</small></h2><div class="plan ' + (G.dir === 'rtl' ? 'rtl' : '') + '">' + items.join('') + '</div></section>';
+  const mini = (O, i, st) => {
+    const lvl = O.faceUp ? LEVEL[O.sec.level] : LEVEL[O.sec.level];
+    if (st === 'done') return '<div class="mo done" title="Cleared"><b>' + esc(O.sec.name) + '</b><span>✓</span></div>';
+    return '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + '"><i>' + (i + 1) + '</i><b>' + (O.faceUp ? esc(O.sec.name) : lvl) + '</b><span>' + (O.faceUp ? lvl : 'locked') + '</span></div>';
+  };
+  const big = (O, i, tag, active) => '<div class="obs ' + (active ? 'active' : '') + '"><span class="tagline">' + (i + 1) + ' · ' + tag + '</span>' +
+    (O.faceUp ? secUp(O.sec) : '<div class="sec down ' + O.sec.level + '"><small>LOCK SECURITY LEVEL</small><b>' + LEVEL[O.sec.level] + '</b></div>') + '</div>';
+  const cur = G.cur, n = G.obstacles.length;
+  let html = '<div class="focusrow">';
+  if (cur < n) {
+    const O = G.obstacles[cur], act = G.phase !== 'direction';
+    const cell = (p) => {
+      const rec = act && A.plantedBy(O, p.idx);
+      const pick = rec && md === 'distract' ? 'pick' : '';
+      const card = !act ? '' : rec ? back('mini ' + pick, pick ? 'data-act="distract-pick" data-p="' + p.idx + '"' : '') : '<div class="pc mini ghost"></div>';
+      return '<div class="corner ' + (rec ? 'has' : 'empty') + ' c' + p.idx + '" style="--pc:' + AV[p.idx % 4].bg + '">' + card + '<span class="who">' + avatar(p.idx, 20) + esc(p.name) + (p.human ? ' (you)' : '') + '</span></div>';
+    };
+    html += '<div class="cgrid">' + G.players.map(cell).join('') + '<div class="ccenter">' + big(O, cur, act ? 'Active' : 'First', act).replace('class="obs ', 'class="obs ') + '</div></div>';
+    if (cur + 1 < n) html += '<div class="nextwrap">' + big(G.obstacles[cur + 1], cur + 1, G.obstacles[cur + 1].faceUp ? 'Next' : 'Locked', false) + '</div>';
+  }
+  html += '</div>';
+  const rest = [];
+  for (let i = 0; i < n; i++) { if (i < cur) rest.push(mini(G.obstacles[i], i, 'done')); else if (i >= cur + 2) rest.push(mini(G.obstacles[i], i, 'locked')); }
+  if (rest.length) html += '<div class="restlabel">' + (cur ? 'Cleared and still locked' : 'Still locked') + '</div><div class="restrow">' + rest.join('') + '</div>';
+  return '<section class="panel"><h2>Escape plan <small>' + (G.dir === 'ltr' ? 'escaping left to right' : G.dir === 'rtl' ? 'escaping right to left' : 'direction not chosen yet') + '</small></h2>' + html + '</section>';
 }
 
 function tableHTML() {
@@ -134,7 +139,7 @@ function tableHTML() {
       '<div class="vtxt">' + who + ' flipped <b>' + esc(A.label(lg.flash)) + '</b> against <b>NOT ' + esc(lg.patrol.name) + '</b></div>' +
       '<div class="vtxt sm">' + (lg.pass ? who + ' may give a hint' : who + ' stays silent') + '</div>';
   }
-  return '<section class="panel"><h2>The yard <small>decks on the outside, discard piles in the middle</small></h2><div class="table">' +
+  return '<section class="panel"><h2>The yard</h2><div class="table">' +
     '<div class="cluster">' + patDraw + patDisc + '</div><div class="mid"><div class="lab">Last guard check</div>' + mid + '</div><div class="cluster">' + flDisc + flDraw + '</div></div></section>';
 }
 
@@ -169,7 +174,7 @@ function seatHTML(p) {
     }
     return '<div class="slot">' + inner + known(s.known, s.not) + '</div>';
   }).join('') || '<span class="mono" style="color:var(--muted)">Out of cards</span>';
-  return '<div class="seat ' + (p.human ? 'me ' : '') + (turn ? 'turn' : '') + '"><h3>' + avatar(p.idx, 38) + esc(p.name) + (p.human ? ' (you)' : '') +
+  return '<div class="seat ' + (p.human ? 'me ' : '') + (turn ? 'turn' : '') + '" style="--pc:' + AV[p.idx % 4].bg + '"><h3>' + avatar(p.idx, 38) + esc(p.name) + (p.human ? ' (you)' : '') +
     (turn ? '<span class="st on">TURN</span>' : '') + '<span class="st ' + (planted ? 'on' : '') + '">' + (planted ? 'PLANTED' : 'NEEDS CARD') + '</span></h3>' +
     '<div class="hand">' + slots + '</div></div>';
 }
@@ -331,7 +336,7 @@ function render() {
   const cpus = G.players.filter((p) => !p.human), me = G.players.filter((p) => p.human);
   app.innerHTML = headerHTML() + '<div class="wrap"><div class="main">' + planHTML() + tableHTML() + trayHTML() +
     '<section class="panel actionsPanel">' + controlsHTML() + '</section>' +
-    '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats crew">' + cpus.map(seatHTML).join('') + me.map(seatHTML).join('') + '</div></section></div></div>' + footHTML() + dialogHTML();
+    '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats crew">' + G.players.map(seatHTML).join('') + '</div></section></div></div>' + footHTML() + dialogHTML();
   const lg = document.getElementById('log');
   if (lg && atBottom) lg.scrollTop = lg.scrollHeight;
   const ack = document.querySelector('[data-act=ack]');
