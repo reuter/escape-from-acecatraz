@@ -17,16 +17,21 @@ function card(c, cls, attrs) {
     '<span class="r">' + A.RANKS[c.rank - 1] + '</span><span class="s">' + A.SYM[c.suit] + '</span><span class="big">' + A.SYM[c.suit] + '</span></button>';
 }
 function back(cls, attrs) { return '<button class="pc back ' + (cls || '') + '" ' + (attrs || '') + ' aria-label="Face-down card"></button>'; }
+const SUITWORD = { HEART: 'H', DIAMOND: 'D', CLUB: 'C', SPADE: 'S' };
 function notTag(not) {
-  return (not || []).map((key) => '<span class="known not">not ' + esc(A.SEC.find((x) => x.key === key).name) + '</span>').join('');
+  return (not || []).map((key) => {
+    const nm = A.SEC.find((x) => x.key === key).name, st = SUITWORD[String(nm).toUpperCase()];
+    return '<span class="known not" title="Cannot be ' + esc(nm) + '"><em>✕</em>' + (st ? symHTML(st) : esc(nm)) + '</span>';
+  }).join('');
 }
 function known(k, not) {
   const nt = notTag(not);
-  if (A.isExact(k)) return '<span class="known exact">is ' + A.RANKS[k.rank - 1] + symHTML(k.suit) + '</span>';
+  if (A.isExact(k)) return '<span class="known exact" title="Known exactly"><b>' + A.RANKS[k.rank - 1] + '</b>' + symHTML(k.suit) + '</span>';
   const parts = [];
-  if (k.suit) parts.push(symHTML(k.suit));
-  if (k.rank) parts.push(A.RANKS[k.rank - 1]);
-  return parts.length ? '<span class="known has">' + parts.join(' ') + '</span>' + nt : nt || '<span class="known">no hints</span>';
+  if (k.suit) parts.push('<span class="ks" title="Suit is known">' + symHTML(k.suit) + '</span>');
+  if (k.rank) parts.push('<b class="kr" title="Rank is known">' + A.RANKS[k.rank - 1] + '</b>');
+  if (parts.length) return '<span class="known has">' + parts.join('') + '</span>' + nt;
+  return nt || '<span class="known none" title="No hints yet">?</span>';
 }
 function secUp(sec) {
   return '<div class="sec up"><span class="pill">ESCAPE PLAN</span><span class="nm">' + esc(sec.name) + '</span>' +

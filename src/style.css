@@ -283,3 +283,15 @@ footer.site a { color: var(--green); font-weight: 800; }
 .pile { width: 92px; }
 @media (max-width: 560px) { .table { flex-wrap: wrap; justify-content: center; } .mid { flex: 1 1 100%; order: 3; } }
 @media (max-width: 560px) { .cgrid .ccenter .sec .nm { font-size: 17px; } }
+/* v4: readable hint badges */
+.seat .slot { align-content: start; }
+.seat .known { font-size: 15px; font-weight: 900; line-height: 1; padding: 4px 3px; border-radius: 8px; min-height: 26px; width: 100%; max-width: 54px; display: flex; align-items: center; justify-content: center; gap: 3px; white-space: nowrap; }
+.seat .known .rd { color: #c62828; }
+.seat .known.none { background: transparent; border: 2px dashed var(--line2); color: #94a3b8; font-size: 14px; }
+.seat .known.has { background: #fff3c4; border: 2px solid #e0a800; color: #5c3b00; }
+.seat .known.exact { background: #d6f5e4; border: 2px solid var(--green); color: #0d3d2b; font-size: 16px; }
+.seat .known.has .ks { font-size: 20px; line-height: .9; } .seat .known.has .kr { font-size: 17px; }
+.seat .known.not { background: #fde8e8; border: 2px solid #e06a6a; color: #7a1010; font-size: 12px; padding: 3px 2px; }
+.seat .known.not em { font-style: normal; font-size: 11px; color: #c62828; }
+.seat .known.not .rd { color: #c62828; font-size: 16px; }
+@media (max-width: 560px) { .seat .known { font-size: 12px; padding: 3px 1px; } .seat .known.has .ks { font-size: 15px; } .seat .known.has .kr { font-size: 13px; } .seat .known.not { font-size: 9px; } }
