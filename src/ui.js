@@ -124,14 +124,10 @@ function tableHTML() {
   const lg = G.lastGuard;
   let guard = '<span class="mono" style="color:var(--muted);font-size:12px">No guard check yet.</span>';
   if (lg) guard = patUp(lg.patrol) + card(lg.flash) + '<div><div class="verdict ' + (lg.pass ? 'pass' : 'fail') + '">' + (lg.pass ? 'Pass' : 'Fail') + '</div><div class="mono" style="font-size:11px;color:var(--muted)">' + esc(G.players[lg.by].name) + (lg.pass ? ' may give a hint' : ' stays silent') + '</div></div>';
-  const last = G.log.slice(-3).reverse();
-  let rev = '';
-  if (ui.reveal) rev = '<div><b>Last breakthrough: ' + (ui.reveal.ok ? 'success' : 'FAILED') + '</b><div class="reveal">' + ui.reveal.items.map((r) => '<div class="corner">' + card(r.card, 'mini') + '<span>' + esc(G.players[r.player].name) + '</span></div>').join('') + '</div></div>';
   return '<section class="panel"><h2>The yard <small>flashlight deck, patrol deck, last guard check</small></h2><div class="table">' +
     '<div class="pile">' + flash + 'flashlight deck</div><div class="pile">' + pat + (lv ? 'next check: ' + lv[1] + ' \u00b7 ' + G.patrol.length + ' left' : 'patrol deck empty') + '</div>' +
     '<div class="pile"><button class="btn sm" data-act="tray">Discards ' + G.discard.length + ' / ' + G.patrolDiscard.length + '</button></div>' +
-    '<div class="guardbox">' + guard + '</div>' +
-    '<div class="banner"><b>Latest</b>' + last.map((l, i) => '<div style="' + (i ? 'opacity:.6;font-size:13px' : 'font-weight:600') + '">' + esc(l.text) + '</div>').join('') + rev + '</div></div></section>';
+    '<div class="guardbox">' + guard + '</div></div></section>';
 }
 
 function trayHTML() {
