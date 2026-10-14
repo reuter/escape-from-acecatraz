@@ -298,6 +298,12 @@ footer.site a { color: var(--green); font-weight: 800; }
 .seat .known.not em { font-style: normal; font-size: 11px; color: #c62828; }
 .seat .known.not .rd { color: #c62828; font-size: 16px; }
 @media (max-width: 560px) { .seat .known { font-size: 12px; padding: 3px 1px; } .seat .known.has .ks { font-size: 15px; } .seat .known.has .kr { font-size: 13px; } .seat .known.not { font-size: 9px; } }
+.lowrow { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-top: 6px; }
+.lowcol { min-width: 0; flex: 1 1 0; }
+.lowcol.right { text-align: right; } .lowcol.right .restrow { justify-content: flex-end; }
+.emptynote { font-size: 12px; font-weight: 700; color: var(--muted); opacity: .7; }
+.lowcol .mo { width: 54px; height: 58px; }
+.lowcol.left { flex: 1 1 0; } .lowcol.right { flex: 2.4 1 0; }
 </style>
 <div id="app"></div>
 <script>
@@ -1186,9 +1192,10 @@ function planHTML() {
     if (cur + 1 < n) html += '<div class="nextwrap">' + big(G.obstacles[cur + 1], cur + 1, G.obstacles[cur + 1].faceUp ? 'Next' : 'Locked', false) + '</div>';
   }
   html += '</div>';
-  const rest = [];
-  for (let i = 0; i < n; i++) { if (i < cur) rest.push(mini(G.obstacles[i], i, 'done')); else if (i >= cur + 2) rest.push(mini(G.obstacles[i], i, 'locked')); }
-  if (rest.length) html += '<div class="restlabel">' + (cur ? 'Cleared and still locked' : 'Still locked') + '</div><div class="restrow">' + rest.join('') + '</div>';
+  const doneT = [], lockT = [];
+  for (let i = 0; i < n; i++) { if (i < cur) doneT.push(mini(G.obstacles[i], i, 'done')); else if (i >= cur + 2) lockT.push(mini(G.obstacles[i], i, 'locked')); }
+  html += '<div class="lowrow"><div class="lowcol left"><div class="restlabel">Cleared (' + doneT.length + ')</div><div class="restrow">' + (doneT.join('') || '<span class="emptynote">none yet</span>') + '</div></div>' +
+    '<div class="lowcol right"><div class="restlabel">Still locked (' + lockT.length + ')</div><div class="restrow">' + (lockT.join('') || '<span class="emptynote">none</span>') + '</div></div></div>';
   return '<section class="panel"><h2>Escape plan <small>' + (G.dir === 'ltr' ? 'escaping left to right' : G.dir === 'rtl' ? 'escaping right to left' : 'direction not chosen yet') + '</small></h2>' + html + '</section>';
 }
 

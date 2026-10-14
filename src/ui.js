@@ -122,9 +122,10 @@ function planHTML() {
     if (cur + 1 < n) html += '<div class="nextwrap">' + big(G.obstacles[cur + 1], cur + 1, G.obstacles[cur + 1].faceUp ? 'Next' : 'Locked', false) + '</div>';
   }
   html += '</div>';
-  const rest = [];
-  for (let i = 0; i < n; i++) { if (i < cur) rest.push(mini(G.obstacles[i], i, 'done')); else if (i >= cur + 2) rest.push(mini(G.obstacles[i], i, 'locked')); }
-  if (rest.length) html += '<div class="restlabel">' + (cur ? 'Cleared and still locked' : 'Still locked') + '</div><div class="restrow">' + rest.join('') + '</div>';
+  const doneT = [], lockT = [];
+  for (let i = 0; i < n; i++) { if (i < cur) doneT.push(mini(G.obstacles[i], i, 'done')); else if (i >= cur + 2) lockT.push(mini(G.obstacles[i], i, 'locked')); }
+  html += '<div class="lowrow"><div class="lowcol left"><div class="restlabel">Cleared (' + doneT.length + ')</div><div class="restrow">' + (doneT.join('') || '<span class="emptynote">none yet</span>') + '</div></div>' +
+    '<div class="lowcol right"><div class="restlabel">Still locked (' + lockT.length + ')</div><div class="restrow">' + (lockT.join('') || '<span class="emptynote">none</span>') + '</div></div></div>';
   return '<section class="panel"><h2>Escape plan <small>' + (G.dir === 'ltr' ? 'escaping left to right' : G.dir === 'rtl' ? 'escaping right to left' : 'direction not chosen yet') + '</small></h2>' + html + '</section>';
 }
 
