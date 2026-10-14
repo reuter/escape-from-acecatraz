@@ -100,9 +100,13 @@ function planHTML() {
   const big = (O, i, tag, active) => '<div class="obs ' + (active ? 'active' : '') + '"><span class="tagline">' + (i + 1) + ' · ' + tag + '</span>' +
     (O.faceUp ? secUp(O.sec) : '<div class="sec down ' + O.sec.level + '"><small>LOCK SECURITY LEVEL</small><b>' + LEVEL[O.sec.level] + '</b></div>') + '</div>';
   const cur = G.cur, n = G.obstacles.length;
+  if (G.phase === 'direction') {
+    const tiles = G.obstacles.map((O) => '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + ' path"><b>' + (O.faceUp ? esc(O.sec.name) : LEVEL[O.sec.level]) + '</b><span>' + (O.faceUp ? LEVEL[O.sec.level] : 'locked') + '</span></div>').join('<span class="arrow">\u203a</span>');
+    return '<section class="panel"><h2>Escape plan <small>direction not chosen yet</small></h2><div class="pathrow">' + tiles + '</div><div class="pathends"><span>\u2190 left end</span><span>right end \u2192</span></div></section>';
+  }
   let html = '<div class="focusrow">';
   if (cur < n) {
-    const O = G.obstacles[cur], act = G.phase !== 'direction';
+    const O = G.obstacles[cur], act = true;
     const cell = (p) => {
       const rec = act && A.plantedBy(O, p.idx);
       const pick = rec && md === 'distract' ? 'pick' : '';
@@ -336,7 +340,7 @@ function render() {
   const cpus = G.players.filter((p) => !p.human), me = G.players.filter((p) => p.human);
   app.innerHTML = headerHTML() + '<div class="wrap"><div class="main">' + planHTML() + tableHTML() + trayHTML() +
     '<section class="panel actionsPanel">' + controlsHTML() + '</section>' +
-    '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats crew">' + G.players.map(seatHTML).join('') + '</div></section></div></div>' + footHTML() + dialogHTML();
+    '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats crewgrid">' + G.players.map(seatHTML).join('') + '</div></section></div></div>' + footHTML() + dialogHTML();
   const lg = document.getElementById('log');
   if (lg && atBottom) lg.scrollTop = lg.scrollHeight;
   const ack = document.querySelector('[data-act=ack]');

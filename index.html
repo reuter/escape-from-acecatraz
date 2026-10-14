@@ -229,8 +229,8 @@ footer.site a { color: var(--green); font-weight: 800; }
 .mid .vtxt { font-size: 13px; font-weight: 600; color: var(--ink); } .mid .vtxt.sm { color: var(--muted); font-size: 12px; }
 .actionsPanel { padding-top: 2px; padding-bottom: 14px; }
 .actionsPanel .prompt, .actionsPanel .actions { margin-top: 12px; }
-.seats.crew { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (max-width: 720px) { .seats.crew { grid-template-columns: minmax(0, 1fr); } }
+.seats.crewgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
 .seat.me { background: #fff; border-color: var(--green); border-width: 2px; border-left-width: 9px; }
 .seat.me.turn { background: var(--tint); }
 
@@ -257,9 +257,35 @@ footer.site a { color: var(--green); font-weight: 800; }
 .mo.down { background: linear-gradient(#17261f, #0f3a2c); color: #6ee7b7; } .mo.down.medium { color: #f4c470; } .mo.down.hard { color: #ff8f8f; }
 .mo.done { background: var(--panel2); color: var(--muted); border-color: var(--line); opacity: .7; }
 .seat { border-top: 6px solid var(--pc, var(--line2)); }
-.seats.crew { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.seats.crewgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 560px) { .cgrid { grid-template-columns: 80px 110px 80px; } .cgrid .ccenter .sec { width: 110px; } }
-@media (max-width: 720px) { .seats.crew { grid-template-columns: minmax(0, 1fr); } }
+
+
+/* v3 */
+.pathrow { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
+.pathrow .mo.path { flex: 1 1 0; min-width: 0; width: auto; height: 74px; }
+.pathrow .arrow { color: var(--muted); font-weight: 900; }
+.pathends { display: flex; justify-content: space-between; margin-top: 8px; font-weight: 800; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.cgrid { grid-template-columns: 74px 132px 74px; grid-template-rows: 84px 84px; gap: 4px 10px; }
+.cgrid .corner { background: transparent; border: 0; border-top: 0; border-radius: 0; padding: 0; gap: 3px; }
+.cgrid .corner .who { font-size: 11px; }
+.cgrid .corner.empty .pc.ghost { opacity: .55; border-color: var(--pc); }
+.cgrid .corner.has .pc { box-shadow: 0 0 0 2px var(--pc), 0 2px 0 rgba(20,40,60,.18); }
+.seats.crewgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.seat { padding: 8px 8px 10px; }
+.seat h3 { font-size: 16px; gap: 6px; margin-bottom: 8px; }
+.seat .hand, .me .hand { display: flex; flex-wrap: nowrap; gap: 4px; }
+.seat .slot { flex: 1 1 0; min-width: 0; gap: 4px; }
+.seat .pc, .me .pc { width: 100%; max-width: 54px; height: auto; aspect-ratio: 54 / 76; }
+.seat .known { font-size: 9px; padding: 1px 2px; white-space: normal; text-align: center; line-height: 1.15; min-height: 0; max-width: 100%; }
+.seat.me { border-left-width: 2px; border-color: var(--green); background: #fff; box-shadow: 0 0 0 3px rgba(31,107,80,.18); }
+@media (max-width: 560px) { .seat h3 .st { font-size: 8px; padding: 1px 5px; } .seat .pc .big { font-size: 20px; padding-top: 9px; } .seat .pc .r { font-size: 12px; left: 3px; } .seat .pc .s { font-size: 10px; top: 14px; left: 3px; } }
+.table { flex-wrap: nowrap; gap: 10px; }
+.cluster { gap: 8px; }
+.mid { flex: 1 1 0; min-width: 0; }
+.pile { width: 92px; }
+@media (max-width: 560px) { .table { flex-wrap: wrap; justify-content: center; } .mid { flex: 1 1 100%; order: 3; } }
+@media (max-width: 560px) { .cgrid .ccenter .sec .nm { font-size: 17px; } }
 </style>
 <div id="app"></div>
 <script>
@@ -1126,9 +1152,13 @@ function planHTML() {
   const big = (O, i, tag, active) => '<div class="obs ' + (active ? 'active' : '') + '"><span class="tagline">' + (i + 1) + ' · ' + tag + '</span>' +
     (O.faceUp ? secUp(O.sec) : '<div class="sec down ' + O.sec.level + '"><small>LOCK SECURITY LEVEL</small><b>' + LEVEL[O.sec.level] + '</b></div>') + '</div>';
   const cur = G.cur, n = G.obstacles.length;
+  if (G.phase === 'direction') {
+    const tiles = G.obstacles.map((O) => '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + ' path"><b>' + (O.faceUp ? esc(O.sec.name) : LEVEL[O.sec.level]) + '</b><span>' + (O.faceUp ? LEVEL[O.sec.level] : 'locked') + '</span></div>').join('<span class="arrow">\u203a</span>');
+    return '<section class="panel"><h2>Escape plan <small>direction not chosen yet</small></h2><div class="pathrow">' + tiles + '</div><div class="pathends"><span>\u2190 left end</span><span>right end \u2192</span></div></section>';
+  }
   let html = '<div class="focusrow">';
   if (cur < n) {
-    const O = G.obstacles[cur], act = G.phase !== 'direction';
+    const O = G.obstacles[cur], act = true;
     const cell = (p) => {
       const rec = act && A.plantedBy(O, p.idx);
       const pick = rec && md === 'distract' ? 'pick' : '';
@@ -1362,7 +1392,7 @@ function render() {
   const cpus = G.players.filter((p) => !p.human), me = G.players.filter((p) => p.human);
   app.innerHTML = headerHTML() + '<div class="wrap"><div class="main">' + planHTML() + tableHTML() + trayHTML() +
     '<section class="panel actionsPanel">' + controlsHTML() + '</section>' +
-    '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats crew">' + G.players.map(seatHTML).join('') + '</div></section></div></div>' + footHTML() + dialogHTML();
+    '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats crewgrid">' + G.players.map(seatHTML).join('') + '</div></section></div></div>' + footHTML() + dialogHTML();
   const lg = document.getElementById('log');
   if (lg && atBottom) lg.scrollTop = lg.scrollHeight;
   const ack = document.querySelector('[data-act=ack]');
