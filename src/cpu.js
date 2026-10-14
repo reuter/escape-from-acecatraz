@@ -5,7 +5,7 @@ const A = typeof require !== 'undefined' ? require('./engine.js') : root.Ace;
 // Tunable CPU behaviour. `gamble`: plant an unverified card at or above this chance of matching.
 // `needVerifier`: only gamble when another player can vouch for the pile. `cycle`: plant a blind card just to draw a new one.
 const CFG = { gamble: 0.45, needVerifier: true, cycle: true, cycleMinDeck: { 2: 20, 3: 20, 4: 99 }, cycleNeedsNoHint: true, cycleNeedsVerifier: true, alarmGamble: true,
-  convention: true, conventionBonus: 1.2,        // when pointing at a card, prefer one that fits the active obstacle (so silence carries meaning)
+  convention: true, conventionBonus: 1.2, elimO: 1.0, elimN: 0.4,        // when pointing at a card, prefer one that fits the active obstacle (so silence carries meaning)
   cycleOnExcluded: true,   // every unresolved card of mine is known not to fit: plant one blind to draw a fresh card
   cycleExcludedMinDeck: { 2: 1, 3: 1, 4: 999 },
   mc: true, mcSamples: 16 }; // mc: weigh plant / guard check / riot by playing each forward in sampled worlds // 4p: the deck is too tight to burn cards cycling
@@ -71,8 +71,11 @@ function hintOptions(G, p) {
           const m1 = frac(cs1, O.sec.test);
           const pAfter = c1.reduce((m, cs) => Math.max(m, frac(cs, O.sec.test)), 0);
           score += 4 * Math.max(0, pAfter - pBefore);
-          if (m1 === 0 && before < 10) score += 0.3; // tells them to keep their hands off this one
         }
+        // Telling someone WHICH of their cards will not work is as useful as telling them which will. Prefer the clue that
+        // proves a dud (pointing at a spade for "Red" settles it; pointing at a Jack does not), for the active and the next obstacle.
+        if (needO && frac(c0[k], O.sec.test) > 0 && frac(cs1, O.sec.test) === 0) score += CFG.elimO;
+        if (N && frac(c0[k], nTest) > 0 && frac(cs1, nTest) === 0) score += CFG.elimN;
         score += 0.5 * (1 - cs1.length / c0[k].length); // the more it narrows, the more it helps later obstacles too
         // Don't spend a hint re-confirming a card that already answers the active or next obstacle; spread information to cards nobody knows anything about yet, since the hidden obstacles could need any of them.
         const known0 = slot.known.suit != null || slot.known.rank != null;
