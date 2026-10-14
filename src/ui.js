@@ -146,11 +146,10 @@ function tableHTML() {
   if (lg) {
     const who = esc(G.players[lg.by].name);
     mid = '<div class="verdict ' + (lg.pass ? 'pass' : 'fail') + '">' + (lg.pass ? 'Pass \u2713' : 'Fail \u2717') + '</div>' +
-      '<div class="vtxt">' + who + ' flipped <b>' + esc(A.label(lg.flash)) + '</b> against <b>NOT ' + esc(lg.patrol.name) + '</b></div>' +
       '<div class="vtxt sm">' + (lg.pass ? who + ' may give a hint' : who + ' stays silent') + '</div>';
   }
   return '<section class="panel"><h2>The yard</h2><div class="table">' +
-    '<div class="cluster">' + patDraw + patDisc + '</div><div class="mid"><div class="lab">Last guard check</div>' + mid + '</div><div class="cluster">' + flDisc + flDraw + '</div></div></section>';
+    '<div class="cluster">' + patDraw + patDisc + '</div><div class="mid"><div class="lab">Guard check</div>' + mid + '</div><div class="cluster">' + flDisc + flDraw + '</div></div></section>';
 }
 
 function trayHTML() {

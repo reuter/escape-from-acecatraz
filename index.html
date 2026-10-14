@@ -304,6 +304,8 @@ footer.site a { color: var(--green); font-weight: 800; }
 .emptynote { font-size: 12px; font-weight: 700; color: var(--muted); opacity: .7; }
 .lowcol .mo { width: 54px; height: 58px; }
 .lowcol.left { flex: 1 1 0; } .lowcol.right { flex: 2.4 1 0; }
+.mid { flex: 0 1 170px; align-self: center; padding: 8px 10px; min-width: 0; }
+.mid .verdict { font-size: 20px; }
 </style>
 <div id="app"></div>
 <script>
@@ -1216,11 +1218,10 @@ function tableHTML() {
   if (lg) {
     const who = esc(G.players[lg.by].name);
     mid = '<div class="verdict ' + (lg.pass ? 'pass' : 'fail') + '">' + (lg.pass ? 'Pass \u2713' : 'Fail \u2717') + '</div>' +
-      '<div class="vtxt">' + who + ' flipped <b>' + esc(A.label(lg.flash)) + '</b> against <b>NOT ' + esc(lg.patrol.name) + '</b></div>' +
       '<div class="vtxt sm">' + (lg.pass ? who + ' may give a hint' : who + ' stays silent') + '</div>';
   }
   return '<section class="panel"><h2>The yard</h2><div class="table">' +
-    '<div class="cluster">' + patDraw + patDisc + '</div><div class="mid"><div class="lab">Last guard check</div>' + mid + '</div><div class="cluster">' + flDisc + flDraw + '</div></div></section>';
+    '<div class="cluster">' + patDraw + patDisc + '</div><div class="mid"><div class="lab">Guard check</div>' + mid + '</div><div class="cluster">' + flDisc + flDraw + '</div></div></section>';
 }
 
 function trayHTML() {
