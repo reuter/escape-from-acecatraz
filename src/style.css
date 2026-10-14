@@ -209,3 +209,26 @@ footer.site a { color: var(--green); font-weight: 800; }
 .check.dim { opacity: .55; }
 .dialog .dh { font-size: 24px; font-weight: 900; }
 .dialog .log { max-height: 50vh; }
+
+/* yard: decks on the outside, discards in the middle */
+.table { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 14px 18px; }
+.cluster { display: flex; gap: 18px; align-items: flex-start; }
+.pile { max-width: 130px; }
+.pile .pt { font-weight: 800; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+.pilebtn { background: none; border: 0; padding: 0; cursor: pointer; border-radius: 12px; }
+.pilebtn:hover { outline: 3px solid var(--glow); outline-offset: 3px; }
+.pat.mini.tall { width: 96px; height: 86px; }
+.pat.mini.tall .nm { font-size: 15px; padding: 0 3px; }
+.pat.mini.tall .dn { display: block; font-size: 8px; }
+.pc.pilec { width: 62px; height: 86px; border-radius: 9px; cursor: pointer; }
+.pc.pilec .r { font-size: 17px; left: 6px; top: 4px; } .pc.pilec .s { font-size: 14px; left: 6px; top: 22px; } .pc.pilec .big { font-size: 30px; padding-top: 20px; }
+.pile .stack.empty { width: 62px; font-size: 11px; }
+.mid { flex: 1 1 200px; min-width: 180px; align-self: stretch; border: 2px dashed var(--line); border-radius: 14px; padding: 10px 14px; display: grid; gap: 4px; align-content: center; justify-items: center; text-align: center; }
+.mid .lab { font-weight: 800; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.mid .vtxt { font-size: 13px; font-weight: 600; color: var(--ink); } .mid .vtxt.sm { color: var(--muted); font-size: 12px; }
+.actionsPanel { padding-top: 2px; padding-bottom: 14px; }
+.actionsPanel .prompt, .actionsPanel .actions { margin-top: 12px; }
+.seats.crew { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 720px) { .seats.crew { grid-template-columns: minmax(0, 1fr); } }
+.seat.me { background: #fff; border-color: var(--green); border-width: 2px; border-left-width: 9px; }
+.seat.me.turn { background: var(--tint); }

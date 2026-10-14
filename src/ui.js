@@ -116,18 +116,26 @@ function planHTML() {
 
 function tableHTML() {
   const alarm = A.alarmVisible(G);
-  const flash = alarm ? '<div class="stack alarm">ALARM<br>SOUNDS</div>' : '<div class="stack flash">' + G.deck.length + '</div>';
-  const top = G.patrol[G.patrol.length - 1];
   const PL = { easy: ['EXTREME CAUTION', 'hard to pass', 'caution'], medium: ['MEDIUM', 'medium odds', 'med'], hard: ['RELAXED', 'easy to pass', 'relaxed'] };
+  const top = G.patrol[G.patrol.length - 1];
   const lv = top ? PL[top.level] : null;
-  const pat = top ? '<div class="stack patrol ' + lv[2] + '">GUARD PATROL<b>' + lv[0] + '</b></div>' : '<div class="stack empty">empty</div>';
+  const pile = (visual, title, sub, btn) => '<div class="pile">' + (btn ? '<button class="pilebtn" data-act="tray" title="Browse the discard piles">' + visual + '</button>' : visual) + '<b class="pt">' + title + '</b><span>' + sub + '</span></div>';
+  const patDraw = pile(top ? '<div class="stack patrol ' + lv[2] + '">GUARD PATROL<b>' + lv[0] + '</b></div>' : '<div class="stack empty">empty</div>', 'Patrol deck', top ? 'next check: ' + lv[1] + '<br>' + G.patrol.length + ' left' : 'empty');
+  const pd = G.patrolDiscard[G.patrolDiscard.length - 1];
+  const patDisc = pile(pd ? patUp(pd, 'mini tall') : '<div class="stack empty">none</div>', 'Patrol discard', G.patrolDiscard.length + ' card' + (G.patrolDiscard.length === 1 ? '' : 's'), true);
+  const fd = G.discard[G.discard.length - 1];
+  const flDisc = pile(fd ? card(fd, 'pilec') : '<div class="stack empty">none</div>', 'Flashlight discard', G.discard.length + ' card' + (G.discard.length === 1 ? '' : 's'), true);
+  const flDraw = pile(alarm ? '<div class="stack alarm">ALARM<br>SOUNDS</div>' : '<div class="stack flash">' + G.deck.length + '</div>', 'Flashlight deck', alarm ? 'drawing is locked' : G.deck.length + ' left');
   const lg = G.lastGuard;
-  let guard = '<span class="mono" style="color:var(--muted);font-size:12px">No guard check yet.</span>';
-  if (lg) guard = patUp(lg.patrol) + card(lg.flash) + '<div><div class="verdict ' + (lg.pass ? 'pass' : 'fail') + '">' + (lg.pass ? 'Pass' : 'Fail') + '</div><div class="mono" style="font-size:11px;color:var(--muted)">' + esc(G.players[lg.by].name) + (lg.pass ? ' may give a hint' : ' stays silent') + '</div></div>';
-  return '<section class="panel"><h2>The yard <small>flashlight deck, patrol deck, last guard check</small></h2><div class="table">' +
-    '<div class="pile">' + flash + 'flashlight deck</div><div class="pile">' + pat + (lv ? 'next check: ' + lv[1] + ' \u00b7 ' + G.patrol.length + ' left' : 'patrol deck empty') + '</div>' +
-    '<div class="pile"><button class="btn sm" data-act="tray">Discards ' + G.discard.length + ' / ' + G.patrolDiscard.length + '</button></div>' +
-    '<div class="guardbox">' + guard + '</div></div></section>';
+  let mid = '<div class="vtxt">No guard check yet.</div>';
+  if (lg) {
+    const who = esc(G.players[lg.by].name);
+    mid = '<div class="verdict ' + (lg.pass ? 'pass' : 'fail') + '">' + (lg.pass ? 'Pass \u2713' : 'Fail \u2717') + '</div>' +
+      '<div class="vtxt">' + who + ' flipped <b>' + esc(A.label(lg.flash)) + '</b> against <b>NOT ' + esc(lg.patrol.name) + '</b></div>' +
+      '<div class="vtxt sm">' + (lg.pass ? who + ' may give a hint' : who + ' stays silent') + '</div>';
+  }
+  return '<section class="panel"><h2>The yard <small>decks on the outside, discard piles in the middle</small></h2><div class="table">' +
+    '<div class="cluster">' + patDraw + patDisc + '</div><div class="mid"><div class="lab">Last guard check</div>' + mid + '</div><div class="cluster">' + flDisc + flDraw + '</div></div></section>';
 }
 
 function trayHTML() {
@@ -322,8 +330,8 @@ function render() {
   if (!G) { app.innerHTML = headerHTML() + footHTML() + dialogHTML(); return; }
   const cpus = G.players.filter((p) => !p.human), me = G.players.filter((p) => p.human);
   app.innerHTML = headerHTML() + '<div class="wrap"><div class="main">' + planHTML() + tableHTML() + trayHTML() +
-    '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats">' + cpus.map(seatHTML).join('') + '</div></section>' +
-    '<section class="panel"><h2>Your hand</h2><div class="seats">' + me.map(seatHTML).join('') + '</div>' + controlsHTML() + '</section></div></div>' + footHTML() + dialogHTML();
+    '<section class="panel actionsPanel">' + controlsHTML() + '</section>' +
+    '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats crew">' + cpus.map(seatHTML).join('') + me.map(seatHTML).join('') + '</div></section></div></div>' + footHTML() + dialogHTML();
   const lg = document.getElementById('log');
   if (lg && atBottom) lg.scrollTop = lg.scrollHeight;
   const ack = document.querySelector('[data-act=ack]');
