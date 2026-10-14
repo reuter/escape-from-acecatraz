@@ -3,9 +3,9 @@
 const A = window.Ace, CPU = window.AceCPU;
 const app = document.getElementById('app');
 let G = null, timer = null;
-const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, sumOff: false, keepPlant: true, turnStart: 0 };
-try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist', 'summaries', 'plantPopup']) if (k in s) ui[k] = s[k]; } catch (e) {}
-const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist, summaries: ui.summaries, plantPopup: ui.plantPopup })); } catch (e) {} };
+const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, showNot: false, sumOff: false, keepPlant: true, turnStart: 0 };
+try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist', 'summaries', 'plantPopup', 'showNot']) if (k in s) ui[k] = s[k]; } catch (e) {}
+const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist, summaries: ui.summaries, plantPopup: ui.plantPopup, showNot: ui.showNot })); } catch (e) {} };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const redSuit = (s) => s === 'H' || s === 'D';
@@ -25,7 +25,7 @@ function notTag(not) {
   }).join('');
 }
 function known(k, not) {
-  const nt = notTag(not);
+  const nt = ui.showNot ? notTag(not) : '';
   if (A.isExact(k)) return '<span class="known exact" title="Known exactly"><b>' + A.RANKS[k.rank - 1] + '</b>' + symHTML(k.suit) + '</span>';
   const parts = [];
   if (k.suit) parts.push('<span class="ks" title="Suit is known">' + symHTML(k.suit) + '</span>');
@@ -262,7 +262,7 @@ function helpHTML() {
     '<li>Decks are never reshuffled. When the flashlight deck runs out the Alarm Sounds card is revealed and drawing is locked, so hands shrink as cards are planted.</li></ul></div>' +
     '<div class="box"><h3>Tips</h3><ul>' +
     '<li>Hints are your lifeline. Each tag under a card shows what that player knows about their own card: a suit, a rank, or both. Once both are known, it reads “is 7♥”.</li>' +
-    '<li><b>Silence speaks.</b> When you point at a card, point at one that fits the active obstacle if any teammate has one they aren’t sure about. So if a crewmate points at something else, you can tell that none of your unlabelled cards fit. This version tracks that for you with an amber “not …” tag, and it only appears when it is actually true.</li>' +
+    '<li><b>Silence speaks.</b> When you point at a card, point at one that fits the active obstacle if any teammate has one they aren’t sure about. So if a crewmate points at something else, you can tell that none of your unlabelled cards fit. The CPUs track this automatically. To see it yourself, turn on “Show not… hints” in Options: a red ✕ badge appears under a card, and only when it is actually true.</li>' +
     '<li>Planting a card you aren’t sure about can be a smart way to cycle your hand, because a teammate can Distract it if it’s wrong. The catch is that you shouldn’t trigger the Breakthrough yourself on a card you can’t verify.</li>' +
     '<li>It only takes one player who is certain of their own planted card to safely trigger the Breakthrough, as everyone else’s planted cards are known from memory.</li>' +
     '<li>Rank order: A is 1, J is 11, Q is 12 and K is 13. “Odd” includes A, J and K; “Low” is A to 6; “High” is 7 to K.</li></ul></div>' +
@@ -283,6 +283,7 @@ function optionsDialogHTML() {
   return '<div class="overlay"><div class="dialog"><div class="box"><h2 class="dh">Options</h2>' +
     '<label class="check"><input type="checkbox" data-act="opt-summaries" ' + (ui.summaries ? 'checked' : '') + '> Show a summary after each CPU turn</label>' +
     '<label class="check ' + (ui.summaries ? 'dim' : '') + '"><input type="checkbox" data-act="opt-plant" ' + (ui.plantPopup ? 'checked' : '') + (ui.summaries ? ' disabled' : '') + '> Show the card whenever a CPU plants one' + (ui.summaries ? ' (included in the summary)' : '') + '</label>' +
+    '<label class="check"><input type="checkbox" data-act="opt-not" ' + (ui.showNot ? 'checked' : '') + '> Show \u201cnot\u2026\u201d hints under cards (what a player has been ruled out as holding)</label>' +
     '<label class="check"><input type="checkbox" data-act="assist" ' + (ui.assist ? 'checked' : '') + '> Outline cards that match the active obstacle</label>' +
     '<div class="field"><b>CPU speed</b><div class="seg">' + segS + '</div></div>' +
     '<button class="btn primary" data-act="closeopt">Done</button></div></div></div>';
@@ -423,6 +424,7 @@ document.addEventListener('click', (e) => {
     case 'options': ui.options = true; render(); return;
     case 'closeopt': ui.options = false; render(); schedule(); return;
     case 'opt-summaries': ui.summaries = el.checked; save(); render(); return;
+    case 'opt-not': ui.showNot = el.checked; save(); render(); return;
     case 'opt-plant': ui.plantPopup = el.checked; save(); render(); return;
     case 'closeend': ui.endSeen = true; render(); return;
     case 'tray': ui.tray = !ui.tray; render(); return;
