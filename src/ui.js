@@ -3,9 +3,9 @@
 const A = window.Ace, CPU = window.AceCPU;
 const app = document.getElementById('app');
 let G = null, timer = null;
-const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false };
-try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist']) if (k in s) ui[k] = s[k]; } catch (e) {}
-const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist })); } catch (e) {} };
+const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, sumOff: false, keepPlant: true, turnStart: 0 };
+try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist', 'summaries', 'plantPopup']) if (k in s) ui[k] = s[k]; } catch (e) {}
+const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist, summaries: ui.summaries, plantPopup: ui.plantPopup })); } catch (e) {} };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const redSuit = (s) => s === 'H' || s === 'D';
@@ -85,9 +85,9 @@ function headerHTML() {
       '<span class="chip">Patrol deck <b>' + G.patrol.length + '</b></span>' +
       '<span class="chip">Cleared <b>' + Math.min(G.cur, G.obstacles.length) + '/' + G.obstacles.length + '</b></span>';
   }
-  const bar = '<header class="bar"><h1>Escape from <span class="tag">Ace-catraz!</span><span class="demo">Demo</span></h1><span class="barbtns"><button class="btn sm" data-act="help">How to play</button> <button class="btn sm" data-act="newgame">New game</button></span></header>';
+  const bar = '<header class="bar"><h1>Escape from <span class="tag">Ace-catraz!</span><span class="demo">Demo</span></h1><span class="barbtns">' + (G ? '<button class="btn sm" data-act="logopen">Log</button> ' : '') + '<button class="btn sm" data-act="help">How to play</button> ' + (G ? '<button class="btn sm" data-act="options">Options</button> ' : '') + '<button class="btn sm" data-act="newgame">New game</button></span></header>';
   if (!G) return bar;
-  return bar + '<div class="sub"><div class="chips">' + chips + '</div><label class="check"><input type="checkbox" data-act="assist" ' + (ui.assist ? 'checked' : '') + '> Outline cards that match the active obstacle</label></div>';
+  return bar + '<div class="sub"><div class="chips">' + chips + '</div></div>';
 }
 
 function planHTML() {
@@ -250,14 +250,40 @@ function helpHTML() {
     '<li>Rank order: A is 1, J is 11, Q is 12 and K is 13. “Odd” includes A, J and K; “Low” is A to 6; “High” is 7 to K.</li></ul></div>' +
     '<div class="box"><h3>Playing this version</h3><ul>' +
     '<li>You are <b>Ace</b>. The CPU inmates reason from exactly the information a human at the table would have.</li>' +
-    '<li>When a CPU plants a card, a pop-up shows you which one so you can remember it. Dismiss it to continue.</li>' +
-    '<li>The “Outline cards that match the active obstacle” checkbox is a training aid that highlights matching cards in your crew’s hands.</li>' +
+    '<li>After each CPU turn a short summary pops up, and when a CPU plants a card it shows you which one so you can remember it. Dismiss it to continue. You can turn the summaries off (and choose whether to keep seeing planted cards) in <b>Options</b>.</li>' +
+    '<li>In <b>Options</b>, “Outline cards that match the active obstacle” is a training aid that highlights matching cards in your crew’s hands. The <b>Log</b> button shows everything that has happened so far.</li>' +
     '<li>Your own cards are always face down on screen, just like holding them outward at a real table.</li></ul>' +
     '<button class="btn primary" data-act="closehelp">Got it, back to the game</button></div></div></div>';
 }
 
+function logDialogHTML() {
+  return '<div class="overlay"><div class="dialog"><div class="box"><h2 class="dh">Game log</h2><div class="log" id="log">' + G.log.map((l) => '<div class="' + (l.p === 0 ? 'me' : l.p == null ? 'sys' : '') + '">' + esc(l.text) + '</div>').join('') + '</div>' +
+    '<button class="btn primary" data-act="closelog">Close</button></div></div></div>';
+}
+function optionsDialogHTML() {
+  const segS = [['Fast', 350], ['Normal', 800], ['Slow', 1500]].map((d) => '<button data-act="setspeed" data-v="' + d[1] + '" aria-pressed="' + (ui.speed === d[1]) + '">' + d[0] + '</button>').join('');
+  return '<div class="overlay"><div class="dialog"><div class="box"><h2 class="dh">Options</h2>' +
+    '<label class="check"><input type="checkbox" data-act="opt-summaries" ' + (ui.summaries ? 'checked' : '') + '> Show a summary after each CPU turn</label>' +
+    '<label class="check ' + (ui.summaries ? 'dim' : '') + '"><input type="checkbox" data-act="opt-plant" ' + (ui.plantPopup ? 'checked' : '') + (ui.summaries ? ' disabled' : '') + '> Show the card whenever a CPU plants one' + (ui.summaries ? ' (included in the summary)' : '') + '</label>' +
+    '<label class="check"><input type="checkbox" data-act="assist" ' + (ui.assist ? 'checked' : '') + '> Outline cards that match the active obstacle</label>' +
+    '<div class="field"><b>CPU speed</b><div class="seg">' + segS + '</div></div>' +
+    '<button class="btn primary" data-act="closeopt">Done</button></div></div></div>';
+}
+function summaryDialogHTML() {
+  const m = ui.summary;
+  return '<div class="overlay"><div class="dialog notice sum"><div class="box"><div class="who">' + avatar(m.idx, 56) + '<h2>' + esc(m.name) + '’s turn</h2></div>' +
+    (m.card ? '<div class="xlwrap">' + card(m.card, 'xl') + '<p class="note">Planted face-down at ' + esc(m.obs.name) + '. Nobody can look at it again.</p></div>' : '') +
+    '<ul class="turnlist">' + m.lines.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>' +
+    '<label class="check"><input type="checkbox" data-act="sumoff" ' + (ui.sumOff ? 'checked' : '') + '> Don’t show these summaries anymore</label>' +
+    (ui.sumOff ? '<label class="check sub2"><input type="checkbox" data-act="keepplant" ' + (ui.keepPlant ? 'checked' : '') + '> Still show me the card when a CPU plants one</label>' : '') +
+    '<button class="btn primary" data-act="ack">OK</button></div></div></div>';
+}
+
 function dialogHTML() {
   if (ui.help) return helpHTML();
+  if (G && ui.options) return optionsDialogHTML();
+  if (G && ui.logOpen) return logDialogHTML();
+  if (G && ui.summary) return summaryDialogHTML();
   if (ui.dialog === 'setup') {
     const segN = [2, 3, 4].map((n) => '<button data-act="setn" data-v="' + n + '" aria-pressed="' + (ui.n === n) + '">' + n + ' players</button>').join('');
     const obs = { 2: 8, 3: 5, 4: 3 }[ui.n] + (ui.extra ? 1 : 0);
@@ -301,7 +327,7 @@ function render() {
   const cpus = G.players.filter((p) => !p.human), me = G.players.filter((p) => p.human);
   app.innerHTML = headerHTML() + '<div class="wrap"><div class="main">' + planHTML() + tableHTML() + trayHTML() +
     '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats">' + cpus.map(seatHTML).join('') + '</div></section>' +
-    '<section class="panel"><h2>Your hand</h2><div class="seats">' + me.map(seatHTML).join('') + '</div>' + controlsHTML() + '</section></div>' + logHTML() + '</div>' + footHTML() + dialogHTML();
+    '<section class="panel"><h2>Your hand</h2><div class="seats">' + me.map(seatHTML).join('') + '</div>' + controlsHTML() + '</section></div></div>' + footHTML() + dialogHTML();
   const lg = document.getElementById('log');
   if (lg && atBottom) lg.scrollTop = lg.scrollHeight;
   const ack = document.querySelector('[data-act=ack]');
@@ -315,10 +341,17 @@ function doApply(a) {
     const pl = G.players[G.turn];
     if (!pl.human && pl.hand[a.hand]) notice = { name: pl.name, card: pl.hand[a.hand].card, obs: O.sec, idx: pl.idx };
   }
+  const actor = G.turn, actorP = G.players[actor];
   const before = a.type === 'breakthrough' && O ? O.planted.map((r) => ({ player: r.player, card: r.card })) : null;
   const r = A.apply(G, a);
   if (!r.ok) { console.warn(a, r.why); return r; }
-  if (notice) ui.notice = notice;
+  if (notice) { if (ui.summaries) ui.turnPlant = notice; else if (ui.plantPopup) ui.notice = notice; }
+  if (G.turn !== actor || G.result) {
+    if (!actorP.human && ui.summaries) {
+      ui.summary = { name: actorP.name, idx: actor, lines: G.log.slice(ui.turnStart).map((l) => l.text), card: ui.turnPlant ? ui.turnPlant.card : null, obs: ui.turnPlant ? ui.turnPlant.obs : null };
+    }
+    ui.turnStart = G.log.length; ui.turnPlant = null;
+  }
   ui.flash = a.type === 'hint' ? { to: a.to, hand: a.hand } : null;
   if (before) ui.reveal = { ok: G.lastBreak.ok, items: before };
   ui.sel = null; ui.hintSel = null; if (a.type === 'riotSwap') ui.swapA = null;
@@ -327,7 +360,7 @@ function doApply(a) {
 
 function schedule() {
   clearTimeout(timer);
-  if (!G || G.result || ui.dialog || ui.notice || ui.help) return;
+  if (!G || G.result || ui.dialog || ui.notice || ui.help || ui.summary || ui.options || ui.logOpen) return;
   const p = G.players[G.turn];
   if (p.human) {
     if (G.phase === 'post' && !A.allPlanted(G)) timer = setTimeout(() => { doApply({ type: 'end' }); render(); schedule(); }, 1100);
@@ -344,7 +377,7 @@ function go(a) { const r = doApply(a); render(); schedule(); return r; }
 function startGame() {
   const human = [true, false, false, false];
   G = A.newGame({ n: ui.n, extra: ui.extra, human });
-  ui.dialog = null; ui.notice = null; ui.endSeen = false; ui.sel = null; ui.swapA = null; ui.hintSel = null; ui.reveal = null; ui.flash = null; ui.tray = false;
+  ui.dialog = null; ui.notice = null; ui.summary = null; ui.turnPlant = null; ui.turnStart = G.log.length; ui.sumOff = false; ui.keepPlant = true; ui.endSeen = false; ui.sel = null; ui.swapA = null; ui.hintSel = null; ui.reveal = null; ui.flash = null; ui.tray = false;
   save(); render(); schedule();
 }
 
@@ -362,7 +395,17 @@ document.addEventListener('click', (e) => {
     case 'newgame': clearTimeout(timer); ui.dialog = 'setup'; render(); return;
     case 'help': ui.help = true; render(); return;
     case 'closehelp': ui.help = false; render(); schedule(); return;
-    case 'ack': ui.notice = null; render(); schedule(); return;
+    case 'ack':
+      if (ui.summary && ui.sumOff) { ui.summaries = false; ui.plantPopup = ui.keepPlant; save(); }
+      ui.notice = null; ui.summary = null; ui.sumOff = false; ui.keepPlant = true; render(); schedule(); return;
+    case 'sumoff': ui.sumOff = el.checked; render(); return;
+    case 'keepplant': ui.keepPlant = el.checked; render(); return;
+    case 'logopen': ui.logOpen = true; render(); return;
+    case 'closelog': ui.logOpen = false; render(); schedule(); return;
+    case 'options': ui.options = true; render(); return;
+    case 'closeopt': ui.options = false; render(); schedule(); return;
+    case 'opt-summaries': ui.summaries = el.checked; save(); render(); return;
+    case 'opt-plant': ui.plantPopup = el.checked; save(); render(); return;
     case 'closeend': ui.endSeen = true; render(); return;
     case 'tray': ui.tray = !ui.tray; render(); return;
     case 'cancel': ui.sel = null; render(); return;
