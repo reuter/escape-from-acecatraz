@@ -306,6 +306,13 @@ footer.site a { color: var(--green); font-weight: 800; }
 .lowcol.left { flex: 1 1 0; } .lowcol.right { flex: 2.4 1 0; }
 .mid { flex: 0 1 170px; align-self: center; padding: 8px 10px; min-width: 0; }
 .mid .verdict { font-size: 20px; }
+/* hover tooltips on action buttons */
+.btn.tip { position: relative; }
+.btn.tip::after { content: attr(data-tip); position: absolute; left: 0; bottom: calc(100% + 10px); width: 260px; max-width: 80vw; padding: 9px 12px; border-radius: 10px; background: #14301f; color: #f2fff7; font: 600 12.5px/1.4 Figtree, system-ui, sans-serif; letter-spacing: 0; text-align: left; white-space: normal; box-shadow: 0 8px 22px rgba(0, 0, 0, .28); opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity .12s, transform .12s; z-index: 50; }
+.btn.tip::before { content: ''; position: absolute; left: 22px; bottom: calc(100% + 3px); border: 7px solid transparent; border-top-color: #14301f; border-bottom: 0; opacity: 0; transition: opacity .12s; pointer-events: none; z-index: 50; }
+.btn.tip:hover::after, .btn.tip:focus-visible::after { opacity: 1; transform: none; transition-delay: .25s; }
+.btn.tip:hover::before, .btn.tip:focus-visible::before { opacity: 1; transition-delay: .25s; }
+.actionsPanel, .actions { overflow: visible; }
 </style>
 <div id="app"></div>
 <script>
@@ -1286,9 +1293,18 @@ function controlsHTML() {
   if (!md) return '<div class="prompt wait"><span>' + esc(cur.name) + ' is thinking…</span></div>';
   const L = A.legal(G);
   const O = A.active(G);
+  const TIPS = {
+    plant: 'Plant one of your face-down cards on the active obstacle without looking at it, then draw a replacement. Once everyone has planted, the cards are revealed. If even one does not match, the alarm sounds.',
+    guard: 'Flip a flashlight card against the top patrol card. If it does NOT match the patrol card you pass, and you must point at a teammate\u2019s card and tell them its suit or its rank. If it matches, you stay silent.',
+    distract: 'Discard a planted card you think will not match the obstacle, so that player can plant again. Costs your turn.',
+    riot: 'Discard five flashlight cards (needs at least five left), then swap any two cards on the table.',
+    pass: 'Do nothing this turn. Only allowed once the Alarm Sounds card is showing, or when you have no other legal action.'
+  };
   const b = (act, name, key, sub) => {
     const l = L[key];
-    return '<button class="btn" data-act="' + act + '" ' + (l && l.ok ? '' : 'disabled title="' + esc(l ? l.why : '') + '"') + '>' + name + '<small>' + esc(l && !l.ok ? l.why : sub) + '</small></button>';
+    const ok = l && l.ok;
+    const tip = TIPS[key] + (ok ? '' : ' \u2014 Unavailable now: ' + (l ? l.why : ''));
+    return '<button class="btn tip" data-act="' + act + '" data-tip="' + esc(tip) + '" ' + (ok ? '' : 'disabled') + '>' + name + '<small>' + esc(l && !l.ok ? l.why : sub) + '</small></button>';
   };
   const cancel = '<button class="btn sm" data-act="cancel">Cancel</button>';
   switch (md) {

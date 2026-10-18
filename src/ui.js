@@ -194,9 +194,18 @@ function controlsHTML() {
   if (!md) return '<div class="prompt wait"><span>' + esc(cur.name) + ' is thinking…</span></div>';
   const L = A.legal(G);
   const O = A.active(G);
+  const TIPS = {
+    plant: 'Plant one of your face-down cards on the active obstacle without looking at it, then draw a replacement. Once everyone has planted, the cards are revealed. If even one does not match, the alarm sounds.',
+    guard: 'Flip a flashlight card against the top patrol card. If it does NOT match the patrol card you pass, and you must point at a teammate\u2019s card and tell them its suit or its rank. If it matches, you stay silent.',
+    distract: 'Discard a planted card you think will not match the obstacle, so that player can plant again. Costs your turn.',
+    riot: 'Discard five flashlight cards (needs at least five left), then swap any two cards on the table.',
+    pass: 'Do nothing this turn. Only allowed once the Alarm Sounds card is showing, or when you have no other legal action.'
+  };
   const b = (act, name, key, sub) => {
     const l = L[key];
-    return '<button class="btn" data-act="' + act + '" ' + (l && l.ok ? '' : 'disabled title="' + esc(l ? l.why : '') + '"') + '>' + name + '<small>' + esc(l && !l.ok ? l.why : sub) + '</small></button>';
+    const ok = l && l.ok;
+    const tip = TIPS[key] + (ok ? '' : ' \u2014 Unavailable now: ' + (l ? l.why : ''));
+    return '<button class="btn tip" data-act="' + act + '" data-tip="' + esc(tip) + '" ' + (ok ? '' : 'disabled') + '>' + name + '<small>' + esc(l && !l.ok ? l.why : sub) + '</small></button>';
   };
   const cancel = '<button class="btn sm" data-act="cancel">Cancel</button>';
   switch (md) {
