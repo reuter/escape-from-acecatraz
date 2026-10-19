@@ -34,3 +34,6 @@ Rebuild after editing anything in `src/`:
 
 - Hints follow a convention: point at a card that fits the active obstacle if any teammate holds one they aren't sure about. Pointing elsewhere means nobody has one ("silence speaks"), and the engine records that as a `not` tag on those cards, only when it is true.
 - When a CPU has to choose between planting a card (blind or not), a guard check, a riot or passing, it doesn't use fixed rules. It samples plausible hidden worlds (its own cards, the deck, face-down obstacles) consistent with every hint, plays each candidate move forward with the ordinary crew policy, and picks the one that wins most often (`mc` in `CFG`, `src/cpu.js`).
+
+## Hotseat mode
+Choose "Hotseat (pass and play)" on the start screen for 2 to 4 human players on one device. A cover screen hides every hand between turns, and the next player sees a short recap of the previous turn after pressing Ready.

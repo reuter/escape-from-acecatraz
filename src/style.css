@@ -355,3 +355,12 @@ footer.site a { color: var(--green); font-weight: 800; }
 .rbbtns a.btn { text-decoration: none; display: inline-block; }
 .rbframe { flex: 1 1 auto; width: 100%; border: 0; background: #394753; }
 .rbbtns a.btn { color: var(--ink); }
+/* hotseat */
+.cover { position: fixed; inset: 0; z-index: 40; background: linear-gradient(160deg, #0f3a2c, #1f6b50); display: grid; place-items: center; padding: 20px; }
+.coverbox { background: #fff; border-radius: 24px; padding: 32px 28px; max-width: 460px; width: 100%; text-align: center; display: grid; gap: 14px; justify-items: center; box-shadow: 0 12px 40px rgba(0, 0, 0, .35); }
+.coverbox h2 { font-size: 28px; line-height: 1.1; margin: 0; } .coverbox h2 span { color: var(--green); }
+.coverbox p { margin: 0; color: var(--muted); font-weight: 600; }
+.btn.big { font-size: 22px; padding: 14px 40px; }
+.seats.crewgrid.one { grid-template-columns: minmax(0, 1fr); }
+.handPanel .seat { max-width: 760px; }
+.handPanel .seat .pc, .handPanel .seat.me .pc { max-width: 84px; } .handPanel .seat .known { max-width: 84px; font-size: 16px; }

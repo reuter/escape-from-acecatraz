@@ -3,9 +3,9 @@
 const A = window.Ace, CPU = window.AceCPU;
 const app = document.getElementById('app');
 let G = null, timer = null;
-const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, showNot: false, cardsOpen: false, cardSide: 'plan', sumOff: false, keepPlant: true, turnStart: 0 };
-try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist', 'summaries', 'plantPopup', 'showNot']) if (k in s) ui[k] = s[k]; } catch (e) {}
-const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist, summaries: ui.summaries, plantPopup: ui.plantPopup, showNot: ui.showNot })); } catch (e) {} };
+const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, showNot: false, cardsOpen: false, cardSide: 'plan', playMode: 'cpu', hot: false, handoff: null, pendingSummary: null, sumOff: false, keepPlant: true, turnStart: 0 };
+try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist', 'summaries', 'plantPopup', 'showNot', 'playMode']) if (k in s) ui[k] = s[k]; } catch (e) {}
+const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist, summaries: ui.summaries, plantPopup: ui.plantPopup, showNot: ui.showNot, playMode: ui.playMode })); } catch (e) {} };
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const redSuit = (s) => s === 'H' || s === 'D';
@@ -67,6 +67,8 @@ function avatar(i, size) {
     '<path d="M33 47 Q40 54 47 47" fill="none" stroke="#222" stroke-width="2.4" stroke-linecap="round"/></g></svg>';
 }
 
+const VIEW = () => (ui.hot && G ? G.turn : 0);
+const isMe = (p) => p.idx === VIEW();
 function isSwapSel(pl, i) { const a = ui.swapA; return !!a && a.kind === 'player' && a.player === pl && a.hand === i; }
 function mode() {
   if (!G || G.result || ui.dialog || ui.help) return null;
@@ -116,7 +118,7 @@ function planHTML() {
       const rec = act && A.plantedBy(O, p.idx);
       const pick = rec && md === 'distract' ? 'pick' : '';
       const card = !act ? '' : rec ? back('mini ' + pick, pick ? 'data-act="distract-pick" data-p="' + p.idx + '"' : '') : '<div class="pc mini ghost"></div>';
-      return '<div class="corner ' + (rec ? 'has' : 'empty') + ' c' + p.idx + '" style="--pc:' + AV[p.idx % 4].bg + '">' + card + '<span class="who">' + avatar(p.idx, 20) + esc(p.name) + (p.human ? ' (you)' : '') + '</span></div>';
+      return '<div class="corner ' + (rec ? 'has' : 'empty') + ' c' + p.idx + '" style="--pc:' + AV[p.idx % 4].bg + '">' + card + '<span class="who">' + avatar(p.idx, 20) + esc(p.name) + (isMe(p) ? ' (you)' : '') + '</span></div>';
     };
     html += '<div class="cgrid">' + G.players.map(cell).join('') + '<div class="ccenter">' + big(O, cur, act ? 'Active' : 'First', act).replace('class="obs ', 'class="obs ') + '</div></div>';
     if (cur + 1 < n) html += '<div class="nextwrap">' + big(G.obstacles[cur + 1], cur + 1, G.obstacles[cur + 1].faceUp ? 'Next' : 'Locked', false) + '</div>';
@@ -168,7 +170,7 @@ function seatHTML(p) {
   const planted = O && A.plantedBy(O, p.idx);
   const slots = p.hand.map((s, i) => {
     let inner;
-    if (p.human) {
+    if (isMe(p)) {
       const sw = md === 'swapA' || md === 'swapB';
       const pick = md === 'plant' || sw;
       const sel = sw && isSwapSel(p.idx, i);
@@ -183,14 +185,14 @@ function seatHTML(p) {
     }
     return '<div class="slot">' + inner + known(s.known, s.not) + '</div>';
   }).join('') || '<span class="mono" style="color:var(--muted)">Out of cards</span>';
-  return '<div class="seat ' + (p.human ? 'me ' : '') + (turn ? 'turn' : '') + '" style="--pc:' + AV[p.idx % 4].bg + '"><h3>' + avatar(p.idx, 38) + esc(p.name) + (p.human ? ' (you)' : '') +
+  return '<div class="seat ' + (isMe(p) ? 'me ' : '') + (turn ? 'turn' : '') + '" style="--pc:' + AV[p.idx % 4].bg + '"><h3>' + avatar(p.idx, 38) + esc(p.name) + (isMe(p) ? ' (you)' : '') +
     (turn ? '<span class="st on">TURN</span>' : '') + '<span class="st ' + (planted ? 'on' : '') + '">' + (planted ? 'PLANTED' : 'NEEDS CARD') + '</span></h3>' +
     '<div class="hand">' + slots + '</div></div>';
 }
 
 function controlsHTML() {
   if (G.result) return '';
-  const me = G.players[0], md = mode(), cur = G.players[G.turn];
+  const me = G.players[VIEW()], md = mode(), cur = G.players[G.turn];
   if (!md) return '<div class="prompt wait"><span>' + esc(cur.name) + ' is thinking…</span></div>';
   const L = A.legal(G);
   const O = A.active(G);
@@ -236,13 +238,13 @@ function controlsHTML() {
 }
 
 function logHTML() {
-  return '<aside><section class="panel"><h2>Log</h2><div class="log" id="log">' + G.log.map((l) => '<div class="' + (l.p === 0 ? 'me' : l.p == null ? 'sys' : '') + '">' + esc(l.text) + '</div>').join('') + '</div></section></aside>';
+  return '<aside><section class="panel"><h2>Log</h2><div class="log" id="log">' + G.log.map((l) => '<div class="' + (!ui.hot && l.p === 0 ? 'me' : l.p == null ? 'sys' : '') + '">' + esc(l.text) + '</div>').join('') + '</div></section></aside>';
 }
 
 function helpHTML() {
   // The rulebook is the same document as the printable PDF, shown page by page in a framed viewer.
   return '<div class="overlay rbover"><div class="rbdlg" role="dialog" aria-label="How to play">' +
-    '<div class="rbbar"><b>How to play</b><span class="rbbtns"><a class="btn sm" href="Escape_from_Ace-catraz_Rules.pdf"" target="_blank" rel="noopener">Printable PDF</a>' +
+    '<div class="rbbar"><b>How to play</b><span class="rbbtns"><a class="btn sm" href="Escape_from_Ace-catraz_Rules.pdf" target="_blank" rel="noopener">Printable PDF</a>' +
     '<button class="btn sm primary" data-act="closehelp">' + (G ? 'Back to the game' : 'Close') + '</button></span></div>' +
     '<iframe class="rbframe" title="Escape from Ace-catraz rules" srcdoc="' + esc(window.RULEBOOK_HTML) + '"></iframe></div></div>';
 }
@@ -267,26 +269,26 @@ function dirDialogHTML() {
     opt('ltr', '← Start from the left', G.obstacles) + opt('rtl', 'Start from the right →', G.obstacles.slice().reverse()) + '</div></div></div>';
 }
 function logDialogHTML() {
-  return '<div class="overlay"><div class="dialog"><div class="box"><h2 class="dh">Game log</h2><div class="log" id="log">' + G.log.map((l) => '<div class="' + (l.p === 0 ? 'me' : l.p == null ? 'sys' : '') + '">' + esc(l.text) + '</div>').join('') + '</div>' +
+  return '<div class="overlay"><div class="dialog"><div class="box"><h2 class="dh">Game log</h2><div class="log" id="log">' + G.log.map((l) => '<div class="' + (!ui.hot && l.p === 0 ? 'me' : l.p == null ? 'sys' : '') + '">' + esc(l.text) + '</div>').join('') + '</div>' +
     '<button class="btn primary" data-act="closelog">Close</button></div></div></div>';
 }
 function optionsDialogHTML() {
   const segS = [['Fast', 350], ['Normal', 800], ['Slow', 1500]].map((d) => '<button data-act="setspeed" data-v="' + d[1] + '" aria-pressed="' + (ui.speed === d[1]) + '">' + d[0] + '</button>').join('');
   return '<div class="overlay"><div class="dialog"><div class="box"><h2 class="dh">Options</h2>' +
-    '<label class="check"><input type="checkbox" data-act="opt-summaries" ' + (ui.summaries ? 'checked' : '') + '> Show a summary after each CPU turn</label>' +
-    '<label class="check ' + (ui.summaries ? 'dim' : '') + '"><input type="checkbox" data-act="opt-plant" ' + (ui.plantPopup ? 'checked' : '') + (ui.summaries ? ' disabled' : '') + '> Show the card whenever a CPU plants one' + (ui.summaries ? ' (included in the summary)' : '') + '</label>' +
+    '<label class="check"><input type="checkbox" data-act="opt-summaries" ' + (ui.summaries ? 'checked' : '') + '> ' + (ui.hot ? 'Show a recap of the previous player\u2019s turn' : 'Show a summary after each CPU turn') + '</label>' +
+    (ui.hot ? '' : '<label class="check ' + (ui.summaries ? 'dim' : '') + '"><input type="checkbox" data-act="opt-plant" ' + (ui.plantPopup ? 'checked' : '') + (ui.summaries ? ' disabled' : '') + '> Show the card whenever a CPU plants one' + (ui.summaries ? ' (included in the summary)' : '') + '</label>') +
     '<label class="check"><input type="checkbox" data-act="opt-not" ' + (ui.showNot ? 'checked' : '') + '> Show \u201cnot\u2026\u201d hints under cards (what a player has been ruled out as holding)</label>' +
     '<label class="check"><input type="checkbox" data-act="assist" ' + (ui.assist ? 'checked' : '') + '> Outline cards that match the active obstacle</label>' +
-    '<div class="field"><b>CPU speed</b><div class="seg">' + segS + '</div></div>' +
+    (ui.hot ? '' : '<div class="field"><b>CPU speed</b><div class="seg">' + segS + '</div></div>') +
     '<button class="btn primary" data-act="closeopt">Done</button></div></div></div>';
 }
 function summaryDialogHTML() {
   const m = ui.summary;
-  return '<div class="overlay"><div class="dialog notice sum"><div class="box"><div class="who">' + avatar(m.idx, 56) + '<h2>' + esc(m.name) + '’s turn</h2></div>' +
+  return '<div class="overlay"><div class="dialog notice sum"><div class="box"><div class="who">' + avatar(m.idx, 56) + '<h2>' + (ui.hot ? 'Last turn: ' : '') + esc(m.name) + (ui.hot ? '' : '’s turn') + '</h2></div>' +
     (m.card ? '<div class="xlwrap">' + card(m.card, 'xl') + '<p class="note">Planted face-down at ' + esc(m.obs.name) + '. Nobody can look at it again.</p></div>' : '') +
     '<ul class="turnlist">' + m.lines.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>' +
-    '<label class="check"><input type="checkbox" data-act="sumoff" ' + (ui.sumOff ? 'checked' : '') + '> Don’t show these summaries anymore</label>' +
-    (ui.sumOff ? '<label class="check sub2"><input type="checkbox" data-act="keepplant" ' + (ui.keepPlant ? 'checked' : '') + '> Still show me the card when a CPU plants one</label>' : '') +
+    '<label class="check"><input type="checkbox" data-act="sumoff" ' + (ui.sumOff ? 'checked' : '') + '> Don’t show these ' + (ui.hot ? 'recaps' : 'summaries') + ' anymore</label>' +
+    (ui.sumOff && !ui.hot ? '<label class="check sub2"><input type="checkbox" data-act="keepplant" ' + (ui.keepPlant ? 'checked' : '') + '> Still show me the card when a CPU plants one</label>' : '') +
     '<button class="btn primary" data-act="ack">OK</button></div></div></div>';
 }
 
@@ -298,14 +300,16 @@ function dialogHTML() {
   if (G && ui.summary) return summaryDialogHTML();
   if (G && !G.result && !ui.dialog && !ui.notice && G.phase === 'direction' && G.players[G.turn].human) return dirDialogHTML();
   if (ui.dialog === 'setup') {
+    const segM = [['cpu', 'You vs CPU crew'], ['hot', 'Hotseat (pass and play)']].map((d) => '<button data-act="setmode" data-v="' + d[0] + '" aria-pressed="' + (ui.playMode === d[0]) + '">' + d[1] + '</button>').join('');
+    const hotM = ui.playMode === 'hot';
     const segN = [2, 3, 4].map((n) => '<button data-act="setn" data-v="' + n + '" aria-pressed="' + (ui.n === n) + '">' + n + ' players</button>').join('');
     const obs = { 2: 8, 3: 5, 4: 3 }[ui.n] + (ui.extra ? 1 : 0);
     const fan = [[1, 'S'], [12, 'H'], [1, 'D'], [11, 'C'], [13, 'S']].map((c, k) => '<div class="fc" style="transform:rotate(' + (k - 2) * 9 + 'deg) translateY(' + Math.abs(k - 2) * 4 + 'px)">' + card({ rank: c[0], suit: c[1] }, '', 'tabindex="-1"') + '</div>').join('');
     return '<div class="overlay"><div class="dialog">' +
       '<div class="hero"><h2>Escape from <span class="tag">Ace-catraz!</span></h2><div class="fan">' + fan + '</div>' +
       '<div class="crew">' + [0, 1, 2, 3].map((k) => avatar(k, 44)).join('') + '</div>' +
-      '<p>You are Ace. You can see every crewmate’s cards but never your own.</p><p class="demobadge">Playable demo by Andy Serwatuk · Feedback or publishing inquiries: games@serwatuk.ca</p></div>' +
-      '<div class="box"><div class="field"><b>Crew size</b><div class="seg">' + segN + '</div><p class="note">' + obs + ' obstacles, ' + (ui.n - 1) + ' extra HARD card' + (ui.n > 2 ? 's' : '') + ' shuffled in</p></div>' +
+      '<p>' + (hotM ? 'Pass the device between turns. Everyone sees their crewmates’ cards but never their own.' : 'You are Ace. You can see every crewmate’s cards but never your own.') + '</p><p class="demobadge">Playable demo by Andy Serwatuk · Feedback or publishing inquiries: games@serwatuk.ca</p></div>' +
+      '<div class="box"><div class="field"><b>Play mode</b><div class="seg">' + segM + '</div>' + (hotM ? '<p class="note">No CPU players. A cover screen hides every hand between turns.</p>' : '') + '</div><div class="field"><b>Crew size</b><div class="seg">' + segN + '</div><p class="note">' + obs + ' obstacles, ' + (ui.n - 1) + ' extra HARD card' + (ui.n > 2 ? 's' : '') + ' shuffled in</p></div>' +
       '<label class="check"><input type="checkbox" data-act="extra" ' + (ui.extra ? 'checked' : '') + '> Add one obstacle (harder, per the rules tip)</label>' +
       '<button class="btn primary" data-act="start">Start the escape</button><button class="btn" data-act="help">How to play</button></div></div></div>';
   }
@@ -331,14 +335,26 @@ function footHTML() {
   return '<footer class="site"><span class="demo">Demo</span><span>A playable demo of a cooperative card game by designer Andy Serwatuk. Send feedback, or get in touch about publishing opportunities: <a href="mailto:' + MAIL + '?subject=Escape%20from%20Ace-catraz">' + MAIL + '</a></span></footer>';
 }
 
+function coverHTML() {
+  const h = ui.handoff, to = G.players[h.to];
+  return '<div class="cover"><div class="coverbox">' + avatar(h.to, 96) + '<h2>Pass the device to <span>' + esc(to.name) + '</span></h2>' +
+    '<p>Everyone else, look away. Press Ready when you are ' + esc(to.name) + ' and it is your turn.</p>' +
+    '<button class="btn primary big" data-act="ready">Ready</button></div></div>';
+}
+
 function render() {
   const scroll = document.getElementById('log');
   const atBottom = !scroll || scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 30;
   if (!G) { app.innerHTML = headerHTML() + footHTML() + dialogHTML(); return; }
-  const cpus = G.players.filter((p) => !p.human), me = G.players.filter((p) => p.human);
+  if (ui.hot && ui.handoff && !G.result) { app.innerHTML = headerHTML() + coverHTML() + footHTML() + dialogHTML(); return; }
+  const view = VIEW();
+  const crewSection = ui.hot
+    ? '<section class="panel"><h2>The crew <small>everyone else\u2019s cards, with what each of them knows</small></h2><div class="seats crewgrid' + (G.n === 2 ? ' one' : '') + '">' + G.players.filter((p) => p.idx !== view).map(seatHTML).join('') + '</div></section>' +
+      '<section class="panel handPanel"><h2>Your hand <small>' + esc(G.players[view].name) + ', you cannot see these cards</small></h2><div class="seats crewgrid one">' + seatHTML(G.players[view]) + '</div></section>'
+    : '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats crewgrid">' + G.players.map(seatHTML).join('') + '</div></section>';
   app.innerHTML = headerHTML() + '<div class="wrap"><div class="main">' + planHTML() + tableHTML() + trayHTML() +
     '<section class="panel actionsPanel">' + controlsHTML() + '</section>' +
-    '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats crewgrid">' + G.players.map(seatHTML).join('') + '</div></section></div></div>' + footHTML() + dialogHTML();
+    crewSection + '</div></div>' + footHTML() + dialogHTML();
   const lg = document.getElementById('log');
   if (lg && atBottom) lg.scrollTop = lg.scrollHeight;
   const ack = document.querySelector('[data-act=ack]');
@@ -361,6 +377,10 @@ function doApply(a) {
     if (!actorP.human && ui.summaries) {
       ui.summary = { name: actorP.name, idx: actor, lines: G.log.slice(ui.turnStart).map((l) => l.text), card: ui.turnPlant ? ui.turnPlant.card : null, obs: ui.turnPlant ? ui.turnPlant.obs : null };
     }
+    if (ui.hot && !G.result) {
+      ui.handoff = { from: actor, to: G.turn };
+      ui.pendingSummary = ui.summaries ? { name: actorP.name, idx: actor, lines: G.log.slice(ui.turnStart).map((l) => l.text), card: null, obs: null } : null;
+    }
     ui.turnStart = G.log.length; ui.turnPlant = null;
   }
   ui.flash = a.type === 'hint' ? { to: a.to, hand: a.hand } : null;
@@ -371,10 +391,10 @@ function doApply(a) {
 
 function schedule() {
   clearTimeout(timer);
-  if (!G || G.result || ui.dialog || ui.notice || ui.help || ui.summary || ui.options || ui.logOpen || ui.cardsOpen) return;
+  if (!G || G.result || ui.dialog || ui.notice || ui.help || ui.summary || ui.options || ui.logOpen || ui.cardsOpen || ui.handoff) return;
   const p = G.players[G.turn];
   if (p.human) {
-    if (G.phase === 'post' && !A.allPlanted(G)) timer = setTimeout(() => { doApply({ type: 'end' }); render(); schedule(); }, 1100);
+    if (!ui.hot && G.phase === 'post' && !A.allPlanted(G)) timer = setTimeout(() => { doApply({ type: 'end' }); render(); schedule(); }, 1100);
     return;
   }
   timer = setTimeout(() => {
@@ -386,7 +406,8 @@ function schedule() {
 function go(a) { const r = doApply(a); render(); schedule(); return r; }
 
 function startGame() {
-  const human = [true, false, false, false];
+  ui.hot = ui.playMode === 'hot'; ui.handoff = null; ui.pendingSummary = null;
+  const human = ui.hot ? [true, true, true, true] : [true, false, false, false];
   G = A.newGame({ n: ui.n, extra: ui.extra, human });
   ui.dialog = null; ui.notice = null; ui.summary = null; ui.turnPlant = null; ui.turnStart = G.log.length; ui.sumOff = false; ui.keepPlant = true; ui.endSeen = false; ui.sel = null; ui.swapA = null; ui.hintSel = null; ui.reveal = null; ui.flash = null; ui.tray = false;
   save(); render(); schedule();
@@ -397,6 +418,8 @@ document.addEventListener('click', (e) => {
   if (!el || el.disabled) return;
   const d = el.dataset, md = mode();
   switch (d.act) {
+    case 'setmode': ui.playMode = d.v; save(); render(); return;
+    case 'ready': ui.handoff = null; ui.summary = ui.pendingSummary; ui.pendingSummary = null; render(); schedule(); return;
     case 'setn': ui.n = +d.v; render(); return;
     case 'dir': go({ type: 'direction', dir: d.v }); return;
     case 'setspeed': ui.speed = +d.v; save(); render(); return;
