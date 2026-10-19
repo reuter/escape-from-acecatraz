@@ -6,6 +6,7 @@ echo '<style>'; cat src/style.css; echo '</style>'
 echo '<div id="app"></div>'
 echo '<script>'; cat src/engine.js; echo '</script>'
 echo '<script>'; cat src/cpu.js; echo '</script>'
+echo '<script>'; cat src/rulebook.js; echo '</script>'
 echo '<script>'; cat src/ui.js; echo '</script>'
 } > index.html
 wc -c index.html

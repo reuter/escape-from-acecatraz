@@ -240,42 +240,11 @@ function logHTML() {
 }
 
 function helpHTML() {
-  return '<div class="overlay"><div class="dialog help" role="dialog" aria-label="How to play">' +
-    '<div class="hero"><h2>How to <span class="tag">Escape!</span></h2><p>A cooperative card deduction game for 2 to 4 inmates.</p></div>' +
-    '<div class="box"><h3>The goal</h3><p>You and your crew are stuck in Ace-Catraz. Clear every obstacle in the escape plan together and you win. Set off the alarm even once and everyone loses.</p>' +
-    '<p><b>The twist:</b> you can see your crewmates’ cards, but never your own. Your crew has to tell you what you are holding, and you have to remember it.</p></div>' +
-    '<div class="box"><h3>The table</h3><ul>' +
-    '<li><b>Escape plan:</b> a row of obstacle cards (8 for 2 players, 5 for 3, 3 for 4). Each one says which cards <i>match</i> it, such as “RED” or “ACE OR JACK”. Only the active obstacle and the next one are face up.</li>' +
-    '<li><b>Flashlight deck:</b> a standard 52-card deck, with the Alarm Sounds card at the very bottom. Everyone starts with 5 cards.</li>' +
-    '<li><b>Patrol deck:</b> guard cards used for guard checks. It shows how tough the next check will be (relaxed, careful or extreme caution).</li>' +
-    '<li><b>Lock levels:</b> easy, medium and hard. Hard obstacles are shuffled in among the others, and the rest of the hard cards go into the patrol deck.</li></ul>' +
-    '<p>Once the lock levels are visible, the crew picks an escape direction: left to right or right to left. That decides which obstacle comes first, so you can start with the easy ones or tackle the hard ones early.</p></div>' +
-    '<div class="box"><h3>On your turn</h3><p>Do <b>one</b> of the actions below, then optionally try a Breakthrough.</p><ul>' +
-    '<li><b>Play my part:</b> pick one of your cards without looking at it and plant it face down on a free corner of the active obstacle. Then draw a replacement. Each player may plant only one card per obstacle.</li>' +
-    '<li><b>Guard check:</b> flip the top patrol card and the top flashlight card. If the flashlight card does <b>not</b> match what the patrol card says to avoid, you slip past and must give a hint: point at a teammate’s card and say either its suit or its rank. If it does match, you are spotted: stay silent and your turn ends. Both cards are discarded.</li>' +
-    '<li><b>Distract:</b> discard any one planted card from the active obstacle, then shuffle one patrol card from the discard back into the patrol deck. Use it when a planted card is known to be wrong.</li>' +
-    '<li><b>Riot:</b> discard 5 cards from the flashlight deck (you need at least 5 left), then swap any two cards: your own, a teammate’s, or one from the discard pile. At least one has to come from a hand.</li>' +
-    '<li><b>Pass:</b> only when the Alarm Sounds card has been revealed (the deck has run out), or when you have no other legal action.</li></ul></div>' +
-    '<div class="box"><h3>Breakthrough</h3><p>At the end of your turn, if <b>every</b> player has exactly one card planted on the active obstacle, you may try a Breakthrough. All planted cards are revealed.</p><ul>' +
-    '<li>If <b>all</b> of them match the obstacle, you clear it. The next obstacle becomes active and another one is revealed.</li>' +
-    '<li>If even <b>one</b> card doesn’t match, the alarm trips and the crew loses immediately.</li></ul>' +
-    '<p>Nobody may look at a planted card again, so remember what each player put down. Anyone can see the cards other players planted, because they watched them being chosen.</p></div>' +
-    '<div class="box"><h3>Winning and losing</h3><ul>' +
-    '<li><b>Win:</b> every obstacle in the plan is cleared.</li>' +
-    '<li><b>Lose:</b> a Breakthrough fails, or all players run out of cards with obstacles still left.</li>' +
-    '<li>Decks are never reshuffled. When the flashlight deck runs out the Alarm Sounds card is revealed and drawing is locked, so hands shrink as cards are planted.</li></ul></div>' +
-    '<div class="box"><h3>Tips</h3><ul>' +
-    '<li>Hints are your lifeline. Each tag under a card shows what that player knows about their own card: a suit, a rank, or both. Once both are known, it reads “is 7♥”.</li>' +
-    '<li><b>Silence speaks.</b> When you point at a card, point at one that fits the active obstacle if any teammate has one they aren’t sure about. So if a crewmate points at something else, you can tell that none of your unlabelled cards fit. The CPUs track this automatically. To see it yourself, turn on “Show not… hints” in Options: a red ✕ badge appears under a card, and only when it is actually true.</li>' +
-    '<li>Planting a card you aren’t sure about can be a smart way to cycle your hand, because a teammate can Distract it if it’s wrong. The catch is that you shouldn’t trigger the Breakthrough yourself on a card you can’t verify.</li>' +
-    '<li>It only takes one player who is certain of their own planted card to safely trigger the Breakthrough, as everyone else’s planted cards are known from memory.</li>' +
-    '<li>Rank order: A is 1, J is 11, Q is 12 and K is 13. “Odd” includes A, J and K; “Low” is A to 6; “High” is 7 to K.</li></ul></div>' +
-    '<div class="box"><h3>Playing this version</h3><ul>' +
-    '<li>You are <b>Ace</b>. The CPU inmates reason from exactly the information a human at the table would have.</li>' +
-    '<li>After each CPU turn a short summary pops up, and when a CPU plants a card it shows you which one so you can remember it. Dismiss it to continue. You can turn the summaries off (and choose whether to keep seeing planted cards) in <b>Options</b>.</li>' +
-    '<li>In <b>Options</b>, “Outline cards that match the active obstacle” is a training aid that highlights matching cards in your crew’s hands. The <b>Log</b> button shows everything that has happened so far.</li>' +
-    '<li>Your own cards are always face down on screen, just like holding them outward at a real table.</li></ul>' +
-    '<button class="btn primary" data-act="closehelp">Got it, back to the game</button></div></div></div>';
+  // The rulebook is the same document as the printable PDF, shown page by page in a framed viewer.
+  return '<div class="overlay rbover"><div class="rbdlg" role="dialog" aria-label="How to play">' +
+    '<div class="rbbar"><b>How to play</b><span class="rbbtns"><a class="btn sm" href="Escape_from_Ace-catraz_Rules.pdf" target="_blank" rel="noopener" download>Printable PDF</a>' +
+    '<button class="btn sm primary" data-act="closehelp">' + (G ? 'Back to the game' : 'Close') + '</button></span></div>' +
+    '<iframe class="rbframe" title="Escape from Ace-catraz rules" srcdoc="' + esc(window.RULEBOOK_HTML) + '"></iframe></div></div>';
 }
 
 function cardsDialogHTML() {
