@@ -37,3 +37,13 @@ Rebuild after editing anything in `src/`:
 
 ## Hotseat mode
 Choose "Hotseat (pass and play)" on the start screen for 2 to 4 human players on one device. A cover screen hides every hand between turns, and the next player sees a short recap of the previous turn after pressing Ready.
+
+## Presenter tools (hidden)
+
+Not linked anywhere in the public UI.
+
+- `?demo` (or `#demo`) loads a fixed mid-game pitch position: 4 players, Ace to move, a known 9♠ in hand.
+- `?tour` (or `#tour`) starts a guided tour on a fresh 2-player game.
+- If the address can't carry a flag (for example inside an embedded viewer), tap the "Demo" badge in the header, or the title on the start screen, five times to open the same two options.
+
+The pitch position is a recorded seed plus action list in `src/demo.js` (replayed through the engine), so it is identical every time.

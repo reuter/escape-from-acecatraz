@@ -3,7 +3,7 @@
 const A = window.Ace, CPU = window.AceCPU;
 const app = document.getElementById('app');
 let G = null, timer = null;
-const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, showNot: false, cardsOpen: false, cardSide: 'plan', playMode: 'cpu', hot: false, handoff: null, pendingSummary: null, lastEnd: {}, startLog: 0, sumOff: false, keepPlant: true, turnStart: 0 };
+const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, showNot: false, cardsOpen: false, cardSide: 'plan', playMode: 'cpu', hot: false, handoff: null, pendingSummary: null, presenter: false, tour: null, lastEnd: {}, startLog: 0, sumOff: false, keepPlant: true, turnStart: 0 };
 try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist', 'summaries', 'plantPopup', 'showNot', 'playMode']) if (k in s) ui[k] = s[k]; } catch (e) {}
 const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist, summaries: ui.summaries, plantPopup: ui.plantPopup, showNot: ui.showNot, playMode: ui.playMode })); } catch (e) {} };
 
@@ -92,7 +92,7 @@ function headerHTML() {
       '<span class="chip">Patrol deck <b>' + G.patrol.length + '</b></span>' +
       '<span class="chip">Cleared <b>' + Math.min(G.cur, G.obstacles.length) + '/' + G.obstacles.length + '</b></span>';
   }
-  const bar = '<header class="bar"><h1>Escape from <span class="tag">Ace-catraz!</span><span class="demo">Demo</span></h1><span class="barbtns">' + (G ? '<button class="btn sm" data-act="logopen">Log</button> ' : '') + '<button class="btn sm" data-act="cards">Cards</button> <button class="btn sm" data-act="help">How to play</button> ' + (G ? '<button class="btn sm" data-act="options">Options</button> ' : '') + '<button class="btn sm" data-act="newgame">New game</button></span></header>';
+  const bar = '<header class="bar"><h1>Escape from <span class="tag">Ace-catraz!</span><span class="demo" data-act="badge">Demo</span></h1><span class="barbtns">' + (G ? '<button class="btn sm" data-act="logopen">Log</button> ' : '') + '<button class="btn sm" data-act="cards">Cards</button> <button class="btn sm" data-act="help">How to play</button> ' + (G ? '<button class="btn sm" data-act="options">Options</button> ' : '') + '<button class="btn sm" data-act="newgame">New game</button></span></header>';
   if (!G) return bar;
   return bar + '<div class="sub"><div class="chips">' + chips + '</div></div>';
 }
@@ -293,6 +293,7 @@ function summaryDialogHTML() {
 }
 
 function dialogHTML() {
+  if (ui.presenter) return presenterHTML();
   if (ui.help) return helpHTML();
   if (ui.cardsOpen) return cardsDialogHTML();
   if (G && ui.options) return optionsDialogHTML();
@@ -306,7 +307,7 @@ function dialogHTML() {
     const obs = { 2: 8, 3: 5, 4: 3 }[ui.n] + (ui.extra ? 1 : 0);
     const fan = [[1, 'S'], [12, 'H'], [1, 'D'], [11, 'C'], [13, 'S']].map((c, k) => '<div class="fc" style="transform:rotate(' + (k - 2) * 9 + 'deg) translateY(' + Math.abs(k - 2) * 4 + 'px)">' + card({ rank: c[0], suit: c[1] }, '', 'tabindex="-1"') + '</div>').join('');
     return '<div class="overlay"><div class="dialog">' +
-      '<div class="hero"><h2>Escape from <span class="tag">Ace-catraz!</span></h2><div class="fan">' + fan + '</div>' +
+      '<div class="hero"><h2 data-act="badge">Escape from <span class="tag">Ace-catraz!</span></h2><div class="fan">' + fan + '</div>' +
       '<div class="crew">' + [0, 1, 2, 3].map((k) => avatar(k, 44)).join('') + '</div>' +
       '<p>' + (hotM ? 'Pass the device between turns. Everyone sees their crewmates’ cards but never their own.' : 'You are Ace. You can see every crewmate’s cards but never your own.') + '</p><p class="demobadge">Playable demo by Andy Serwatuk · Feedback or publishing inquiries: games@serwatuk.ca</p></div>' +
       '<div class="box"><div class="field"><b>Play mode</b><div class="seg">' + segM + '</div>' + (hotM ? '<p class="note">No CPU players. A cover screen hides every hand between turns.</p>' : '') + '</div><div class="field"><b>Crew size</b><div class="seg">' + segN + '</div><p class="note">' + obs + ' obstacles, ' + (ui.n - 1) + ' extra HARD card' + (ui.n > 2 ? 's' : '') + ' shuffled in</p></div>' +
@@ -346,6 +347,7 @@ function render() {
   const scroll = document.getElementById('log');
   const atBottom = !scroll || scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 30;
   if (!G) { app.innerHTML = headerHTML() + footHTML() + dialogHTML(); return; }
+  tourAdvance();
   if (ui.hot && ui.handoff && !G.result) { app.innerHTML = headerHTML() + coverHTML() + footHTML() + dialogHTML(); return; }
   const view = VIEW();
   const crewSection = ui.hot
@@ -354,9 +356,10 @@ function render() {
     : '<section class="panel"><h2>Crew <small>each tag shows what that player knows about their own card</small></h2><div class="seats crewgrid">' + G.players.map(seatHTML).join('') + '</div></section>';
   app.innerHTML = headerHTML() + '<div class="wrap"><div class="main">' + planHTML() + tableHTML() + trayHTML() +
     '<section class="panel actionsPanel">' + controlsHTML() + '</section>' +
-    crewSection + '</div></div>' + footHTML() + dialogHTML();
+    crewSection + '</div></div>' + footHTML() + (ui.tour ? '<div style="height:190px"></div>' : '') + dialogHTML() + tourHTML();
   const lg = document.getElementById('log');
   if (lg && atBottom) lg.scrollTop = lg.scrollHeight;
+  tourAfterRender();
   const ack = document.querySelector('[data-act=ack]');
   if (ack) ack.focus();
 }
@@ -372,6 +375,7 @@ function doApply(a) {
   const before = a.type === 'breakthrough' && O ? O.planted.map((r) => ({ player: r.player, card: r.card })) : null;
   const r = A.apply(G, a);
   if (!r.ok) { console.warn(a, r.why); return r; }
+  if (ui.tour && actorP.human) ui.tour.seen[a.type] = true;
   if (notice) { if (ui.summaries) ui.turnPlant = notice; else if (ui.plantPopup) ui.notice = notice; }
   if (G.turn !== actor || G.result) {
     if (!actorP.human && ui.summaries) {
@@ -393,7 +397,7 @@ function doApply(a) {
 
 function schedule() {
   clearTimeout(timer);
-  if (!G || G.result || ui.dialog || ui.notice || ui.help || ui.summary || ui.options || ui.logOpen || ui.cardsOpen || ui.handoff) return;
+  if (!G || G.result || ui.dialog || ui.notice || ui.help || ui.summary || ui.options || ui.logOpen || ui.cardsOpen || ui.presenter || ui.handoff) return;
   const p = G.players[G.turn];
   if (p.human) {
     if (!ui.hot && G.phase === 'post' && !A.allPlanted(G)) timer = setTimeout(() => { doApply({ type: 'end' }); render(); schedule(); }, 1100);
@@ -406,6 +410,69 @@ function schedule() {
   }, ui.speed);
 }
 function go(a) { const r = doApply(a); render(); schedule(); return r; }
+
+/* ---------- Presenter tools (hidden): pitch position and guided tour ---------- */
+function presenterHTML() {
+  return '<div class="overlay"><div class="dialog notice"><div class="box"><h2>Presenter tools</h2>' +
+    '<p>Hidden from the public view. Tap the “Demo” badge (or the title on the start screen) five times, or add <b>?demo</b> or <b>?tour</b> to the address.</p>' +
+    '<div class="actions"><button class="btn primary" data-act="loaddemo">Load pitch position<small>4 players, mid-game, your move</small></button>' +
+    '<button class="btn" data-act="starttour">Start guided tour<small>2 players, fresh game, coach marks</small></button></div>' +
+    '<button class="btn sm" data-act="presclose">Close</button></div></div></div>';
+}
+function loadDemo() {
+  const D = window.DEMO; if (!D) return;
+  clearTimeout(timer);
+  ui.presenter = false; ui.tour = null; ui.hot = false; ui.handoff = null; ui.pendingSummary = null; ui.lastEnd = {};
+  G = A.newGame({ n: D.n, seed: D.seed, human: [true, false, false, false] });
+  for (const a of D.acts) A.apply(G, a);
+  ui.n = D.n; ui.dialog = null; ui.notice = null; ui.summary = null; ui.turnPlant = null; ui.turnStart = G.log.length; ui.startLog = 0;
+  ui.sumOff = false; ui.keepPlant = true; ui.endSeen = false; ui.sel = null; ui.swapA = null; ui.hintSel = null; ui.reveal = null; ui.flash = null; ui.tray = false;
+  ui.logOpen = false; ui.help = false; ui.cardsOpen = false; ui.options = false;
+  render(); schedule(); window.scrollTo(0, 0);
+}
+const TOUR = [
+  { t: 'Welcome to the escape. You are Ace, one of the inmates. You can see every crewmate’s cards but never your own. Let me show you the table.' },
+  { t: 'First, choose which end of the plan the crew starts from. Either way works; it just sets the order of the obstacles.', when: () => G.phase !== 'direction' },
+  { sel: '.main > section.panel:nth-of-type(1)', t: 'This is the escape plan. The big card is the active obstacle: everyone must plant a matching card there. The next one is on deck, cleared ones sit lower left, locked ones lower right.' },
+  { sel: '.main > section.panel:nth-of-type(2)', t: 'The yard holds the flashlight deck, the patrol deck and the guard-check area. Flashlight cards are what you draw and plant.' },
+  { sel: '.main > section.panel:last-child', t: 'The crew. Your teammates’ cards are face-up to you; yours are hidden. The small tags show what each player has been told about their own card.' },
+  { sel: '.actionsPanel', t: 'Your turn. Try “Play my part”: tap it, then tap one of your own cards to plant it blind. Hover over any action for a tooltip.', when: () => ui.tour.seen.plant },
+  { sel: '.actionsPanel', t: 'Planted face-down. Now the CPU crew take their turns, and a short recap appears after each. Tap OK to carry on.', when: () => ui.tour.seen.plant && G.turn === 0 && G.phase === 'action' && !ui.summary && !ui.notice },
+  { sel: '.actionsPanel', t: 'Try a Guard check. Flip a flashlight card: if it does not match the patrol card you pass and get to give a hint; if it matches, you stay silent.', when: () => ui.tour.seen.guard },
+  { sel: '.crewgrid', t: 'You passed! Point at a teammate’s card and tell them its suit or rank. Hints are the only way anyone learns what they are holding. Silence teaches things too.', when: () => ui.tour.seen.hint || G.phase !== 'hint' },
+  { sel: '.barbtns', t: 'Log replays everything, Cards shows every obstacle and patrol card (with a flip), How to play opens the rulebook, and Options has the CPU speed.' },
+  { t: 'That is the whole loop: plant, guard check, hint. Clear every obstacle before the alarm ends the escape. Good luck!', last: true },
+];
+function startTour() {
+  clearTimeout(timer);
+  ui.presenter = false; ui.n = 2; ui.playMode = 'cpu'; ui.extra = false;
+  startGame();
+  ui.tour = { i: 0, seen: {}, shown: -1 };
+  render();
+}
+function tourAdvance() {
+  const T = ui.tour; if (!T) return;
+  let guard = 0;
+  while (T.i < TOUR.length - 1 && TOUR[T.i].when && TOUR[T.i].when() && guard++ < 12) T.i++;
+}
+function tourHTML() {
+  const T = ui.tour; if (!T || !G) return '';
+  const st = TOUR[T.i];
+  return '<div class="tour"><div class="tourstep">Tour · step ' + (T.i + 1) + ' of ' + TOUR.length + '</div><p>' + esc(st.t) + '</p><div class="tourrow">' +
+    '<button class="btn sm" data-act="tourquit">' + (st.last ? 'Close' : 'End tour') + '</button>' +
+    (st.last ? '' : '<button class="btn sm primary" data-act="tournext">' + (st.when ? 'Skip step' : 'Next') + '</button>') + '</div></div>';
+}
+function tourAfterRender() {
+  document.querySelectorAll('.tourhl').forEach((e) => e.classList.remove('tourhl'));
+  const T = ui.tour; if (!T) return;
+  const st = TOUR[T.i];
+  if (!st.sel) return;
+  const el = document.querySelector(st.sel);
+  if (!el) return;
+  el.classList.add('tourhl');
+  if (T.shown !== T.i) { T.shown = T.i; try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {} }
+}
+let badgeTaps = [];
 
 function startGame() {
   ui.hot = ui.playMode === 'hot'; ui.handoff = null; ui.pendingSummary = null; ui.lastEnd = {};
@@ -420,6 +487,12 @@ document.addEventListener('click', (e) => {
   if (!el || el.disabled) return;
   const d = el.dataset, md = mode();
   switch (d.act) {
+    case 'badge': { const now = Date.now(); badgeTaps = badgeTaps.filter((t) => now - t < 3000); badgeTaps.push(now); if (badgeTaps.length >= 5) { badgeTaps = []; ui.presenter = true; render(); } return; }
+    case 'presclose': ui.presenter = false; render(); schedule(); return;
+    case 'loaddemo': loadDemo(); return;
+    case 'starttour': startTour(); return;
+    case 'tournext': if (ui.tour) { ui.tour.i = Math.min(TOUR.length - 1, ui.tour.i + 1); render(); } return;
+    case 'tourquit': ui.tour = null; render(); return;
     case 'setmode': ui.playMode = d.v; save(); render(); return;
     case 'ready': ui.handoff = null; ui.summary = ui.pendingSummary; ui.pendingSummary = null; render(); schedule(); return;
     case 'setn': ui.n = +d.v; render(); return;
@@ -481,5 +554,8 @@ document.addEventListener('keydown', (e) => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.pat[data-act]')) { e.preventDefault(); e.target.click(); }
 });
 
-render();
+const q = (location.search + location.hash).toLowerCase();
+if (/demo/.test(q) && window.DEMO) loadDemo();
+else if (/tour/.test(q)) startTour();
+else render();
 })();
