@@ -300,7 +300,6 @@ function dialogHTML() {
   if (ui.dialog === 'setup') {
     const segN = [2, 3, 4].map((n) => '<button data-act="setn" data-v="' + n + '" aria-pressed="' + (ui.n === n) + '">' + n + ' players</button>').join('');
     const obs = { 2: 8, 3: 5, 4: 3 }[ui.n] + (ui.extra ? 1 : 0);
-    const segS = [['Fast', 350], ['Normal', 800], ['Slow', 1500]].map((d) => '<button data-act="setspeed" data-v="' + d[1] + '" aria-pressed="' + (ui.speed === d[1]) + '">' + d[0] + '</button>').join('');
     const fan = [[1, 'S'], [12, 'H'], [1, 'D'], [11, 'C'], [13, 'S']].map((c, k) => '<div class="fc" style="transform:rotate(' + (k - 2) * 9 + 'deg) translateY(' + Math.abs(k - 2) * 4 + 'px)">' + card({ rank: c[0], suit: c[1] }, '', 'tabindex="-1"') + '</div>').join('');
     return '<div class="overlay"><div class="dialog">' +
       '<div class="hero"><h2>Escape from <span class="tag">Ace-catraz!</span></h2><div class="fan">' + fan + '</div>' +
@@ -308,7 +307,6 @@ function dialogHTML() {
       '<p>You are Ace. You can see every crewmate’s cards but never your own.</p><p class="demobadge">Playable demo by Andy Serwatuk · Feedback or publishing inquiries: games@serwatuk.ca</p></div>' +
       '<div class="box"><div class="field"><b>Crew size</b><div class="seg">' + segN + '</div><p class="note">' + obs + ' obstacles, ' + (ui.n - 1) + ' extra HARD card' + (ui.n > 2 ? 's' : '') + ' shuffled in</p></div>' +
       '<label class="check"><input type="checkbox" data-act="extra" ' + (ui.extra ? 'checked' : '') + '> Add one obstacle (harder, per the rules tip)</label>' +
-      '<div class="field"><b>CPU speed</b><div class="seg">' + segS + '</div></div>' +
       '<button class="btn primary" data-act="start">Start the escape</button><button class="btn" data-act="help">How to play</button></div></div></div>';
   }
   if (ui.notice) {
