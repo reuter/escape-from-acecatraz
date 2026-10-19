@@ -1159,7 +1159,7 @@ window.RULEBOOK_HTML = "<!doctype html><meta charset=\"utf-8\"><title>Escape fro
 const A = window.Ace, CPU = window.AceCPU;
 const app = document.getElementById('app');
 let G = null, timer = null;
-const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, showNot: false, cardsOpen: false, cardSide: 'plan', playMode: 'cpu', hot: false, handoff: null, pendingSummary: null, sumOff: false, keepPlant: true, turnStart: 0 };
+const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, showNot: false, cardsOpen: false, cardSide: 'plan', playMode: 'cpu', hot: false, handoff: null, pendingSummary: null, lastEnd: {}, startLog: 0, sumOff: false, keepPlant: true, turnStart: 0 };
 try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist', 'summaries', 'plantPopup', 'showNot', 'playMode']) if (k in s) ui[k] = s[k]; } catch (e) {}
 const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist, summaries: ui.summaries, plantPopup: ui.plantPopup, showNot: ui.showNot, playMode: ui.playMode })); } catch (e) {} };
 
@@ -1431,7 +1431,7 @@ function logDialogHTML() {
 function optionsDialogHTML() {
   const segS = [['Fast', 350], ['Normal', 800], ['Slow', 1500]].map((d) => '<button data-act="setspeed" data-v="' + d[1] + '" aria-pressed="' + (ui.speed === d[1]) + '">' + d[0] + '</button>').join('');
   return '<div class="overlay"><div class="dialog"><div class="box"><h2 class="dh">Options</h2>' +
-    '<label class="check"><input type="checkbox" data-act="opt-summaries" ' + (ui.summaries ? 'checked' : '') + '> ' + (ui.hot ? 'Show a recap of the previous player\u2019s turn' : 'Show a summary after each CPU turn') + '</label>' +
+    '<label class="check"><input type="checkbox" data-act="opt-summaries" ' + (ui.summaries ? 'checked' : '') + '> ' + (ui.hot ? 'Show a recap of everything since your last turn' : 'Show a summary after each CPU turn') + '</label>' +
     (ui.hot ? '' : '<label class="check ' + (ui.summaries ? 'dim' : '') + '"><input type="checkbox" data-act="opt-plant" ' + (ui.plantPopup ? 'checked' : '') + (ui.summaries ? ' disabled' : '') + '> Show the card whenever a CPU plants one' + (ui.summaries ? ' (included in the summary)' : '') + '</label>') +
     '<label class="check"><input type="checkbox" data-act="opt-not" ' + (ui.showNot ? 'checked' : '') + '> Show \u201cnot\u2026\u201d hints under cards (what a player has been ruled out as holding)</label>' +
     '<label class="check"><input type="checkbox" data-act="assist" ' + (ui.assist ? 'checked' : '') + '> Outline cards that match the active obstacle</label>' +
@@ -1440,7 +1440,7 @@ function optionsDialogHTML() {
 }
 function summaryDialogHTML() {
   const m = ui.summary;
-  return '<div class="overlay"><div class="dialog notice sum"><div class="box"><div class="who">' + avatar(m.idx, 56) + '<h2>' + (ui.hot ? 'Last turn: ' : '') + esc(m.name) + (ui.hot ? '' : '’s turn') + '</h2></div>' +
+  return '<div class="overlay"><div class="dialog notice sum"><div class="box"><div class="who">' + avatar(m.idx, 56) + '<h2>' + (m.since ? 'Since your last turn, ' + esc(m.name) : esc(m.name) + '’s turn') + '</h2></div>' +
     (m.card ? '<div class="xlwrap">' + card(m.card, 'xl') + '<p class="note">Planted face-down at ' + esc(m.obs.name) + '. Nobody can look at it again.</p></div>' : '') +
     '<ul class="turnlist">' + m.lines.map((t) => '<li>' + esc(t) + '</li>').join('') + '</ul>' +
     '<label class="check"><input type="checkbox" data-act="sumoff" ' + (ui.sumOff ? 'checked' : '') + '> Don’t show these ' + (ui.hot ? 'recaps' : 'summaries') + ' anymore</label>' +
@@ -1535,7 +1535,9 @@ function doApply(a) {
     }
     if (ui.hot && !G.result) {
       ui.handoff = { from: actor, to: G.turn };
-      ui.pendingSummary = ui.summaries ? { name: actorP.name, idx: actor, lines: G.log.slice(ui.turnStart).map((l) => l.text), card: null, obs: null } : null;
+      ui.lastEnd[actor] = G.log.length;
+      const since = ui.lastEnd[G.turn] != null ? ui.lastEnd[G.turn] : ui.startLog;
+      ui.pendingSummary = ui.summaries ? { name: G.players[G.turn].name, idx: G.turn, since: true, lines: G.log.slice(since).map((l) => l.text), card: null, obs: null } : null;
     }
     ui.turnStart = G.log.length; ui.turnPlant = null;
   }
@@ -1562,10 +1564,10 @@ function schedule() {
 function go(a) { const r = doApply(a); render(); schedule(); return r; }
 
 function startGame() {
-  ui.hot = ui.playMode === 'hot'; ui.handoff = null; ui.pendingSummary = null;
+  ui.hot = ui.playMode === 'hot'; ui.handoff = null; ui.pendingSummary = null; ui.lastEnd = {};
   const human = ui.hot ? [true, true, true, true] : [true, false, false, false];
   G = A.newGame({ n: ui.n, extra: ui.extra, human });
-  ui.dialog = null; ui.notice = null; ui.summary = null; ui.turnPlant = null; ui.turnStart = G.log.length; ui.sumOff = false; ui.keepPlant = true; ui.endSeen = false; ui.sel = null; ui.swapA = null; ui.hintSel = null; ui.reveal = null; ui.flash = null; ui.tray = false;
+  ui.dialog = null; ui.notice = null; ui.summary = null; ui.turnPlant = null; ui.turnStart = G.log.length; ui.startLog = G.log.length; ui.sumOff = false; ui.keepPlant = true; ui.endSeen = false; ui.sel = null; ui.swapA = null; ui.hintSel = null; ui.reveal = null; ui.flash = null; ui.tray = false;
   save(); render(); schedule();
 }
 
