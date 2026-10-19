@@ -1389,7 +1389,7 @@ function logHTML() {
 function helpHTML() {
   // The rulebook is the same document as the printable PDF, shown page by page in a framed viewer.
   return '<div class="overlay rbover"><div class="rbdlg" role="dialog" aria-label="How to play">' +
-    '<div class="rbbar"><b>How to play</b><span class="rbbtns"><a class="btn sm" href="Escape_from_Ace-catraz_Rules.pdf" target="_blank" rel="noopener" download>Printable PDF</a>' +
+    '<div class="rbbar"><b>How to play</b><span class="rbbtns"><a class="btn sm" href="Escape_from_Ace-catraz_Rules.pdf"" target="_blank" rel="noopener">Printable PDF</a>' +
     '<button class="btn sm primary" data-act="closehelp">' + (G ? 'Back to the game' : 'Close') + '</button></span></div>' +
     '<iframe class="rbframe" title="Escape from Ace-catraz rules" srcdoc="' + esc(window.RULEBOOK_HTML) + '"></iframe></div></div>';
 }
