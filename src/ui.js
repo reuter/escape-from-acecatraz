@@ -554,6 +554,7 @@ document.addEventListener('keydown', (e) => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.pat[data-act]')) { e.preventDefault(); e.target.click(); }
 });
 
+try { if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
 const q = (location.search + location.hash).toLowerCase();
 if (/demo/.test(q) && window.DEMO) loadDemo();
 else if (/tour/.test(q)) startTour();

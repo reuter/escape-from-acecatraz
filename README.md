@@ -47,3 +47,7 @@ Not linked anywhere in the public UI.
 - If the address can't carry a flag (for example inside an embedded viewer), tap the "Demo" badge in the header, or the title on the start screen, five times to open the same two options.
 
 The pitch position is a recorded seed plus action list in `src/demo.js` (replayed through the engine), so it is identical every time.
+
+## Offline use
+
+The page has no external requests (the font is embedded). On the hosted copy, open it once while online: a service worker caches the game, and it then works with no connection, including `?demo` and `?tour`. On a tablet, use the browser menu's "Install app" or "Add to Home screen" for a full-screen launcher. Updates are picked up automatically the next time it is opened online.
