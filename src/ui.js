@@ -3,7 +3,7 @@
 const A = window.Ace, CPU = window.AceCPU;
 const app = document.getElementById('app');
 let G = null, timer = null;
-const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, showNot: false, sumOff: false, keepPlant: true, turnStart: 0 };
+const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, showNot: false, cardsOpen: false, cardSide: 'plan', sumOff: false, keepPlant: true, turnStart: 0 };
 try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist', 'summaries', 'plantPopup', 'showNot']) if (k in s) ui[k] = s[k]; } catch (e) {}
 const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist, summaries: ui.summaries, plantPopup: ui.plantPopup, showNot: ui.showNot })); } catch (e) {} };
 
@@ -90,7 +90,7 @@ function headerHTML() {
       '<span class="chip">Patrol deck <b>' + G.patrol.length + '</b></span>' +
       '<span class="chip">Cleared <b>' + Math.min(G.cur, G.obstacles.length) + '/' + G.obstacles.length + '</b></span>';
   }
-  const bar = '<header class="bar"><h1>Escape from <span class="tag">Ace-catraz!</span><span class="demo">Demo</span></h1><span class="barbtns">' + (G ? '<button class="btn sm" data-act="logopen">Log</button> ' : '') + '<button class="btn sm" data-act="help">How to play</button> ' + (G ? '<button class="btn sm" data-act="options">Options</button> ' : '') + '<button class="btn sm" data-act="newgame">New game</button></span></header>';
+  const bar = '<header class="bar"><h1>Escape from <span class="tag">Ace-catraz!</span><span class="demo">Demo</span></h1><span class="barbtns">' + (G ? '<button class="btn sm" data-act="logopen">Log</button> ' : '') + '<button class="btn sm" data-act="cards">Cards</button> <button class="btn sm" data-act="help">How to play</button> ' + (G ? '<button class="btn sm" data-act="options">Options</button> ' : '') + '<button class="btn sm" data-act="newgame">New game</button></span></header>';
   if (!G) return bar;
   return bar + '<div class="sub"><div class="chips">' + chips + '</div></div>';
 }
@@ -213,12 +213,7 @@ function controlsHTML() {
       return '<div class="prompt"><span>Your turn, ' + esc(me.name) + '. Choose one action.</span></div><div class="actions">' +
         b('a-plant', 'Play my part', 'plant', 'plant a blind card, then draw') + b('a-guard', 'Guard check', 'guard', 'pass to give a hint') +
         b('a-distract', 'Distract', 'distract', 'discard a planted card') + b('a-riot', 'Riot', 'riot', 'discard 5, then swap') + b('a-pass', 'Pass', 'pass', 'alarm only') + '</div>';
-    case 'direction': {
-      const seq = (arr) => arr.map((o) => LEVEL[o.sec.level]).join(' \u2192 ');
-      return '<div class="prompt"><span>Check the lock levels, then choose which end the crew starts from.</span><div class="hintbtns">' +
-        '<button class="btn" data-act="dir" data-v="ltr">Start from the left<small style="display:block;font:500 10px var(--f-mono)">' + seq(G.obstacles) + '</small></button>' +
-        '<button class="btn" data-act="dir" data-v="rtl">Start from the right<small style="display:block;font:500 10px var(--f-mono)">' + seq(G.obstacles.slice().reverse()) + '</small></button></div></div>';
-    }
+    case 'direction': return '<div class="prompt"><span>Choose which end the crew starts from.</span></div>';
     case 'plant': return '<div class="prompt"><span>Pick a card to plant. You cannot look at it, so go by the hints.</span>' + cancel + '</div>';
     case 'distract': return '<div class="prompt"><span>Pick a planted card at the active obstacle to discard.</span>' + cancel + '</div>';
     case 'hint': {
@@ -283,6 +278,25 @@ function helpHTML() {
     '<button class="btn primary" data-act="closehelp">Got it, back to the game</button></div></div></div>';
 }
 
+function cardsDialogHTML() {
+  const plan = ui.cardSide === 'plan';
+  const PL = A.PATROL_LABEL;
+  const face = (sec) => plan ? secUp(sec) :
+    '<div class="pat full"><span class="pill">GUARD CHECK</span><span class="nm">NOT ' + esc(sec.name) + '</span><div class="dn">DO NOT MATCH: ' + esc(sec.text) + '</div><span class="plv ' + sec.level + '">' + PL[sec.level] + '</span></div>';
+  const groups = ['easy', 'medium', 'hard'].map((lv) => '<h3 class="lvh ' + lv + '">' + LEVEL[lv] + ' locks · ' + A.SEC.filter((x) => x.level === lv).length + ' cards</h3><div class="cardgrid">' +
+    A.SEC.filter((x) => x.level === lv).map((x) => '<div class="cc ' + (plan ? 'plan' : 'patrol') + '">' + face(x) + '</div>').join('') + '</div>').join('');
+  return '<div class="overlay"><div class="dialog cards"><div class="box"><div class="cardshead"><h2 class="dh">All 17 security cards</h2>' +
+    '<button class="btn primary" data-act="flipcards">⇄ Flip to ' + (plan ? 'guard patrol side' : 'escape plan side') + '</button></div>' +
+    '<p class="sidenote">' + (plan ? '<b>Escape plan side.</b> Face up, a card is an obstacle your crew must break through. Face down, only its lock level shows.' : '<b>Guard patrol side.</b> The top card of the patrol deck. A flashlight card that does NOT match it passes the guard check. The label shows how hard that check is to pass.') + '</p>' +
+    groups + '<button class="btn primary" data-act="closecards">Close</button></div></div></div>';
+}
+function dirDialogHTML() {
+  const row = (arr, first) => '<div class="dirrow">' + arr.map((o, i) => '<div class="dt ' + o.sec.level + (i === 0 ? ' first' : '') + '">' + (i === 0 ? '<i>START</i>' : '') + '<small>LOCK</small><b>' + LEVEL[o.sec.level] + '</b></div>').join('<span class="darr">›</span>') + '</div>';
+  const opt = (v, title, arr) => '<button class="dirbtn" data-act="dir" data-v="' + v + '"><span class="dirtitle">' + title + '</span>' + row(arr) + '</button>';
+  return '<div class="overlay"><div class="dialog dirdlg"><div class="box"><h2 class="dh">Choose your escape direction</h2>' +
+    '<p>You have checked the lock levels. Pick which end of the line the crew breaks out from first.</p>' +
+    opt('ltr', '← Start from the left', G.obstacles) + opt('rtl', 'Start from the right →', G.obstacles.slice().reverse()) + '</div></div></div>';
+}
 function logDialogHTML() {
   return '<div class="overlay"><div class="dialog"><div class="box"><h2 class="dh">Game log</h2><div class="log" id="log">' + G.log.map((l) => '<div class="' + (l.p === 0 ? 'me' : l.p == null ? 'sys' : '') + '">' + esc(l.text) + '</div>').join('') + '</div>' +
     '<button class="btn primary" data-act="closelog">Close</button></div></div></div>';
@@ -309,9 +323,11 @@ function summaryDialogHTML() {
 
 function dialogHTML() {
   if (ui.help) return helpHTML();
+  if (ui.cardsOpen) return cardsDialogHTML();
   if (G && ui.options) return optionsDialogHTML();
   if (G && ui.logOpen) return logDialogHTML();
   if (G && ui.summary) return summaryDialogHTML();
+  if (G && !G.result && !ui.dialog && !ui.notice && G.phase === 'direction' && G.players[G.turn].human) return dirDialogHTML();
   if (ui.dialog === 'setup') {
     const segN = [2, 3, 4].map((n) => '<button data-act="setn" data-v="' + n + '" aria-pressed="' + (ui.n === n) + '">' + n + ' players</button>').join('');
     const obs = { 2: 8, 3: 5, 4: 3 }[ui.n] + (ui.extra ? 1 : 0);
@@ -388,7 +404,7 @@ function doApply(a) {
 
 function schedule() {
   clearTimeout(timer);
-  if (!G || G.result || ui.dialog || ui.notice || ui.help || ui.summary || ui.options || ui.logOpen) return;
+  if (!G || G.result || ui.dialog || ui.notice || ui.help || ui.summary || ui.options || ui.logOpen || ui.cardsOpen) return;
   const p = G.players[G.turn];
   if (p.human) {
     if (G.phase === 'post' && !A.allPlanted(G)) timer = setTimeout(() => { doApply({ type: 'end' }); render(); schedule(); }, 1100);
@@ -421,6 +437,9 @@ document.addEventListener('click', (e) => {
     case 'assist': ui.assist = el.checked; save(); render(); return;
     case 'start': case 'again': startGame(); return;
     case 'newgame': clearTimeout(timer); ui.dialog = 'setup'; render(); return;
+    case 'cards': ui.cardsOpen = true; render(); return;
+    case 'closecards': ui.cardsOpen = false; render(); schedule(); return;
+    case 'flipcards': ui.cardSide = ui.cardSide === 'plan' ? 'patrol' : 'plan'; render(); return;
     case 'help': ui.help = true; render(); return;
     case 'closehelp': ui.help = false; render(); schedule(); return;
     case 'ack':
