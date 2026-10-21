@@ -413,3 +413,8 @@ html, body { max-width: 100%; overflow-x: clip; }
 .dirrow .dt b { font-size: clamp(10px, 2.8vw, 15px); letter-spacing: 0; }
 .dirrow .dt small { font-size: 8px; }
 @media (max-width: 560px) { .dirrow .dt small { display: block; font-size: 6px; } .dirrow .dt b { font-size: clamp(7px, 2.3vw, 13px); } .dirrow.cardsrow { padding: 12px 6px; gap: 2px; } .mo.down b { font-size: 12px; } }
+
+/* difficulty pill on face-up escape-plan cards follows the lock colour: easy green, medium amber, hard red */
+.sec .lvl.easy { background: #6ee7b7; border-color: #065f46; color: #064e3b; }
+.sec .lvl.medium { background: #ffd98a; border-color: #8a5a00; color: #5c3b00; }
+.sec .lvl.hard { background: #ffb4b4; border-color: #8a1d1d; color: #6b0f0f; }

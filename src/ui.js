@@ -36,7 +36,7 @@ function known(k, not) {
 }
 function secUp(sec) {
   return '<div class="sec up"><span class="pill">ESCAPE PLAN</span><span class="nm">' + esc(sec.name) + '</span>' +
-    '<div class="match"><i>MATCH:</i>' + esc(sec.text) + '</div><span class="lvl">' + LEVEL[sec.level] + '</span></div>';
+    '<div class="match"><i>MATCH:</i>' + esc(sec.text) + '</div><span class="lvl ' + sec.level + '">' + LEVEL[sec.level] + '</span></div>';
 }
 function patUp(sec, cls, attrs) {
   return '<div class="pat ' + (cls || '') + '" ' + (attrs || '') + '><span class="pill">GUARD CHECK</span><span class="nm">NOT ' + esc(sec.name) + '</span>' +
