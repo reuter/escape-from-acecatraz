@@ -373,3 +373,25 @@ footer.site a { color: var(--green); font-weight: 800; }
 .tourrow { display: flex; justify-content: flex-end; gap: 8px; }
 .tour .btn { color: #14301f; background: #fff; }
 .tour .btn.primary { color: #fff; background: #1f7a50; }
+
+/* mobile: no hover tooltips on touch (they widened the page), and never allow sideways scroll */
+@media (hover: none), (max-width: 760px) { .btn.tip::after, .btn.tip::before { display: none !important; } }
+html, body { max-width: 100%; overflow-x: clip; }
+
+/* phones: one crew member per row (bigger cards), compact header and two-column action buttons */
+@media (max-width: 560px) {
+  .seats.crewgrid, .seats.crewgrid.one { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .seat .pc, .me .pc { max-width: 62px; }
+  .seat .known { max-width: 62px; }
+  .seat h3 { font-size: 17px; }
+  .bar { padding: 10px 12px; }
+  .bar h1 { font-size: 18px; gap: 8px; }
+  .barbtns { gap: 6px; width: 100%; }
+  .barbtns .btn { flex: 1 1 auto; padding: 7px 10px; font-size: 13px; }
+  .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .actions .btn { min-width: 0; padding: 10px 11px; }
+  .actions .btn small { font-size: 10.5px; }
+  .chips { gap: 6px; } .chip { font-size: 12px; padding: 4px 10px; }
+  .tour { bottom: 6px; padding: 10px 12px; } .tour p { font-size: 13.5px; margin: 3px 0 8px; }
+  .panel { padding-left: 12px; padding-right: 12px; }
+}
