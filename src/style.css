@@ -395,3 +395,15 @@ html, body { max-width: 100%; overflow-x: clip; }
   .tour { bottom: 6px; padding: 10px 12px; } .tour p { font-size: 13.5px; margin: 3px 0 8px; }
   .panel { padding-left: 12px; padding-right: 12px; }
 }
+
+/* direction picker v2: arrow buttons above and below one row of cards */
+.dirdlg .box { display: grid; gap: 12px; }
+.dirbtn.go { text-align: center; justify-items: stretch; gap: 6px; padding: 12px 14px; }
+.dirbtn.go .dirtitle { font-size: 20px; font-weight: 900; text-align: center; }
+.dirbtn.go small { font-weight: 700; font-size: 12px; color: var(--muted); text-align: center; }
+.dline { position: relative; display: block; height: 4px; margin: 8px 12px; background: var(--green); border-radius: 2px; }
+.dline::after { content: ''; position: absolute; top: 50%; width: 0; height: 0; border: 11px solid transparent; transform: translateY(-50%); }
+.dirbtn.ltr .dline::after { right: -10px; border-left: 16px solid var(--green); border-right: 0; }
+.dirbtn.rtl .dline::after { left: -10px; border-right: 16px solid var(--green); border-left: 0; }
+.dirrow.cardsrow { background: #eef3f7; border-radius: 14px; padding: 14px 10px; gap: 4px; }
+.dirrow.cardsrow .dt { height: 74px; }

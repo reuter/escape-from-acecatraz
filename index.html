@@ -400,6 +400,18 @@ html, body { max-width: 100%; overflow-x: clip; }
   .tour { bottom: 6px; padding: 10px 12px; } .tour p { font-size: 13.5px; margin: 3px 0 8px; }
   .panel { padding-left: 12px; padding-right: 12px; }
 }
+
+/* direction picker v2: arrow buttons above and below one row of cards */
+.dirdlg .box { display: grid; gap: 12px; }
+.dirbtn.go { text-align: center; justify-items: stretch; gap: 6px; padding: 12px 14px; }
+.dirbtn.go .dirtitle { font-size: 20px; font-weight: 900; text-align: center; }
+.dirbtn.go small { font-weight: 700; font-size: 12px; color: var(--muted); text-align: center; }
+.dline { position: relative; display: block; height: 4px; margin: 8px 12px; background: var(--green); border-radius: 2px; }
+.dline::after { content: ''; position: absolute; top: 50%; width: 0; height: 0; border: 11px solid transparent; transform: translateY(-50%); }
+.dirbtn.ltr .dline::after { right: -10px; border-left: 16px solid var(--green); border-right: 0; }
+.dirbtn.rtl .dline::after { left: -10px; border-right: 16px solid var(--green); border-left: 0; }
+.dirrow.cardsrow { background: #eef3f7; border-radius: 14px; padding: 14px 10px; gap: 4px; }
+.dirrow.cardsrow .dt { height: 74px; }
 </style>
 <div id="app"></div>
 <script>
@@ -1454,11 +1466,11 @@ function cardsDialogHTML() {
     groups + '<button class="btn primary" data-act="closecards">Close</button></div></div></div>';
 }
 function dirDialogHTML() {
-  const row = (arr, first) => '<div class="dirrow">' + arr.map((o, i) => '<div class="dt ' + o.sec.level + (i === 0 ? ' first' : '') + '">' + (i === 0 ? '<i>START</i>' : '') + '<small>LOCK</small><b>' + LEVEL[o.sec.level] + '</b></div>').join('<span class="darr">›</span>') + '</div>';
-  const opt = (v, title, arr) => '<button class="dirbtn" data-act="dir" data-v="' + v + '"><span class="dirtitle">' + title + '</span>' + row(arr) + '</button>';
+  const cards = '<div class="dirrow cardsrow">' + G.obstacles.map((o) => '<div class="dt ' + o.sec.level + '"><small>LOCK</small><b>' + LEVEL[o.sec.level] + '</b></div>').join('') + '</div>';
+  const go = (v, title, sub) => '<button class="dirbtn go ' + v + '" data-act="dir" data-v="' + v + '"><span class="dirtitle">' + title + '</span><span class="dline"></span><small>' + sub + '</small></button>';
   return '<div class="overlay"><div class="dialog dirdlg"><div class="box"><h2 class="dh">Choose your escape direction</h2>' +
-    '<p>You have checked the lock levels. Pick which end of the line the crew breaks out from first.</p>' +
-    opt('ltr', '← Start from the left', G.obstacles) + opt('rtl', 'Start from the right →', G.obstacles.slice().reverse()) + '</div></div></div>';
+    '<p>You have checked the lock levels. The cards show the line of obstacles as laid out. Pick which end the crew breaks out from first.</p>' +
+    go('ltr', 'Left to right', 'Start at the left card, finish at the right') + cards + go('rtl', 'Right to left', 'Start at the right card, finish at the left') + '</div></div></div>';
 }
 function logDialogHTML() {
   return '<div class="overlay"><div class="dialog"><div class="box"><h2 class="dh">Game log</h2><div class="log" id="log">' + G.log.map((l) => '<div class="' + (!ui.hot && l.p === 0 ? 'me' : l.p == null ? 'sys' : '') + '">' + esc(l.text) + '</div>').join('') + '</div>' +

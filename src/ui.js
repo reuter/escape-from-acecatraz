@@ -262,11 +262,11 @@ function cardsDialogHTML() {
     groups + '<button class="btn primary" data-act="closecards">Close</button></div></div></div>';
 }
 function dirDialogHTML() {
-  const row = (arr, first) => '<div class="dirrow">' + arr.map((o, i) => '<div class="dt ' + o.sec.level + (i === 0 ? ' first' : '') + '">' + (i === 0 ? '<i>START</i>' : '') + '<small>LOCK</small><b>' + LEVEL[o.sec.level] + '</b></div>').join('<span class="darr">›</span>') + '</div>';
-  const opt = (v, title, arr) => '<button class="dirbtn" data-act="dir" data-v="' + v + '"><span class="dirtitle">' + title + '</span>' + row(arr) + '</button>';
+  const cards = '<div class="dirrow cardsrow">' + G.obstacles.map((o) => '<div class="dt ' + o.sec.level + '"><small>LOCK</small><b>' + LEVEL[o.sec.level] + '</b></div>').join('') + '</div>';
+  const go = (v, title, sub) => '<button class="dirbtn go ' + v + '" data-act="dir" data-v="' + v + '"><span class="dirtitle">' + title + '</span><span class="dline"></span><small>' + sub + '</small></button>';
   return '<div class="overlay"><div class="dialog dirdlg"><div class="box"><h2 class="dh">Choose your escape direction</h2>' +
-    '<p>You have checked the lock levels. Pick which end of the line the crew breaks out from first.</p>' +
-    opt('ltr', '← Start from the left', G.obstacles) + opt('rtl', 'Start from the right →', G.obstacles.slice().reverse()) + '</div></div></div>';
+    '<p>You have checked the lock levels. The cards show the line of obstacles as laid out. Pick which end the crew breaks out from first.</p>' +
+    go('ltr', 'Left to right', 'Start at the left card, finish at the right') + cards + go('rtl', 'Right to left', 'Start at the right card, finish at the left') + '</div></div></div>';
 }
 function logDialogHTML() {
   return '<div class="overlay"><div class="dialog"><div class="box"><h2 class="dh">Game log</h2><div class="log" id="log">' + G.log.map((l) => '<div class="' + (!ui.hot && l.p === 0 ? 'me' : l.p == null ? 'sys' : '') + '">' + esc(l.text) + '</div>').join('') + '</div>' +
