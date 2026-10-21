@@ -407,3 +407,9 @@ html, body { max-width: 100%; overflow-x: clip; }
 .dirbtn.rtl .dline::after { left: -10px; border-right: 16px solid var(--green); border-left: 0; }
 .dirrow.cardsrow { background: #eef3f7; border-radius: 14px; padding: 14px 10px; gap: 4px; }
 .dirrow.cardsrow .dt { height: 74px; }
+
+/* small lock tiles: "MED" is short enough to run the level word larger, same size on every tile */
+.mo.down b { font-size: 14px; letter-spacing: .02em; }
+.dirrow .dt b { font-size: clamp(10px, 2.8vw, 15px); letter-spacing: 0; }
+.dirrow .dt small { font-size: 8px; }
+@media (max-width: 560px) { .dirrow .dt small { display: block; font-size: 6px; } .dirrow .dt b { font-size: clamp(7px, 2.3vw, 13px); } .dirrow.cardsrow { padding: 12px 6px; gap: 2px; } .mo.down b { font-size: 12px; } }

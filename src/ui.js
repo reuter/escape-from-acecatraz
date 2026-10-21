@@ -11,6 +11,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 const redSuit = (s) => s === 'H' || s === 'D';
 const symHTML = (s) => '<span class="' + (redSuit(s) ? 'rd' : '') + '">' + A.SYM[s] + '</span>';
 const LEVEL = { easy: 'EASY', medium: 'MEDIUM', hard: 'HARD' };
+const LV3 = { easy: 'EASY', medium: 'MED', hard: 'HARD' }; // short labels for the small tiles
 
 function card(c, cls, attrs) {
   return '<button class="pc ' + (redSuit(c.suit) ? 'red ' : '') + (cls || '') + '" ' + (attrs || '') + ' aria-label="' + esc(A.label(c)) + '">' +
@@ -100,7 +101,7 @@ function headerHTML() {
 function planHTML() {
   const md = mode();
   const mini = (O, i, st) => {
-    const lvl = O.faceUp ? LEVEL[O.sec.level] : LEVEL[O.sec.level];
+    const lvl = LV3[O.sec.level];
     if (st === 'done') return '<div class="mo done" title="Cleared"><b>' + esc(O.sec.name) + '</b><span>✓</span></div>';
     return '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + '"><i>' + (i + 1) + '</i><b>' + (O.faceUp ? esc(O.sec.name) : lvl) + '</b><span>' + (O.faceUp ? lvl : 'locked') + '</span></div>';
   };
@@ -108,7 +109,7 @@ function planHTML() {
     (O.faceUp ? secUp(O.sec) : '<div class="sec down ' + O.sec.level + '"><small>LOCK SECURITY LEVEL</small><b>' + LEVEL[O.sec.level] + '</b></div>') + '</div>';
   const cur = G.cur, n = G.obstacles.length;
   if (G.phase === 'direction') {
-    const tiles = G.obstacles.map((O) => '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + ' path"><b>' + (O.faceUp ? esc(O.sec.name) : LEVEL[O.sec.level]) + '</b><span>' + (O.faceUp ? LEVEL[O.sec.level] : 'locked') + '</span></div>').join('<span class="arrow">\u203a</span>');
+    const tiles = G.obstacles.map((O) => '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + ' path"><b>' + (O.faceUp ? esc(O.sec.name) : LV3[O.sec.level]) + '</b><span>' + (O.faceUp ? LV3[O.sec.level] : 'locked') + '</span></div>').join('<span class="arrow">\u203a</span>');
     return '<section class="panel"><h2>Escape plan <small>direction not chosen yet</small></h2><div class="pathrow">' + tiles + '</div><div class="pathends"><span>\u2190 left end</span><span>right end \u2192</span></div></section>';
   }
   let html = '<div class="focusrow">';
@@ -262,7 +263,7 @@ function cardsDialogHTML() {
     groups + '<button class="btn primary" data-act="closecards">Close</button></div></div></div>';
 }
 function dirDialogHTML() {
-  const cards = '<div class="dirrow cardsrow">' + G.obstacles.map((o) => '<div class="dt ' + o.sec.level + '"><small>LOCK</small><b>' + LEVEL[o.sec.level] + '</b></div>').join('') + '</div>';
+  const cards = '<div class="dirrow cardsrow">' + G.obstacles.map((o) => '<div class="dt ' + o.sec.level + '"><small>LOCK</small><b>' + LV3[o.sec.level] + '</b></div>').join('') + '</div>';
   const go = (v, title, sub) => '<button class="dirbtn go ' + v + '" data-act="dir" data-v="' + v + '"><span class="dirtitle">' + title + '</span><span class="dline"></span><small>' + sub + '</small></button>';
   return '<div class="overlay"><div class="dialog dirdlg"><div class="box"><h2 class="dh">Choose your escape direction</h2>' +
     '<p>You have checked the lock levels. The cards show the line of obstacles as laid out. Pick which end the crew breaks out from first.</p>' +
