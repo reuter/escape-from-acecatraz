@@ -39,13 +39,15 @@ const PATROL_LABEL = { easy: 'EXTREME CAUTION', medium: 'MEDIUM', hard: 'RELAXED
 // 'standard' = an ordinary 52-card deck (suits and ranks). 'prison' = the standalone deck: 4 Prison Gangs x 13 Tools.
 // Rank 1..13 and suit S/H/D/C stay the internal identity, so every rule, hint and CPU decision is identical.
 const DECK = { id: 'standard', suitWord: 'suit', rankWord: 'rank', gang: null, tools: null };
-const T = (name, short, icon, size, noise) => ({ name, short, icon, size, noise });
+const T = (name, short, icon, cat, noise) => ({ name, short, icon, cat, noise, zone: ZONE_OF[cat] });
+// Six tool categories (5 pairs + the Lock Set trio), grouped into two zones: Cell Work and Yard Work.
+const ZONE_OF = { 'Lock Set': 'Cell', Sharps: 'Cell', Cutters: 'Cell', 'Climbing Gear': 'Yard', Smashers: 'Yard', 'Dig Set': 'Yard' };
 const TOOLS = [
-  T('Bobby Pin', 'PIN', '🧷', 'pocket', 'quiet'), T('Paperclip', 'CLIP', '📎', 'pocket', 'quiet'), T('Spoon', 'SPOON', '🥄', 'pocket', 'quiet'),
-  T('Shiv', 'SHIV', '🪥', 'pocket', 'quiet'), T('Nail File', 'FILE', '💅', 'pocket', 'loud'), T('Stolen Key', 'KEY', '🔑', 'pocket', 'loud'),
-  T('Hacksaw', 'HACKSAW', '🪚', 'pocket', 'loud'), T('Bedsheet Rope', 'ROPE', '🪢', 'big', 'quiet'), T('Bolt Cutter', 'CUTTER', '✂️', 'big', 'quiet'),
-  T('Grappling Hook', 'HOOK', '🪝', 'big', 'loud'), T('Crowbar', 'CROWBAR', '🔧', 'big', 'loud'), T('Sledgehammer', 'SLEDGE', '🔨', 'big', 'loud'),
-  T('Pickaxe', 'PICKAXE', '⛏️', 'big', 'loud'),
+  T('Bobby Pin', 'PIN', '🧷', 'Lock Set', 'quiet'), T('Paperclip', 'CLIP', '📎', 'Lock Set', 'quiet'), T('Spoon', 'SPOON', '🥄', 'Dig Set', 'quiet'),
+  T('Shiv', 'SHIV', '🪥', 'Sharps', 'quiet'), T('Nail File', 'FILE', '💅', 'Sharps', 'loud'), T('Stolen Key', 'KEY', '🔑', 'Lock Set', 'loud'),
+  T('Hacksaw', 'HACKSAW', '🪚', 'Cutters', 'loud'), T('Bedsheet Rope', 'ROPE', '🪢', 'Climbing Gear', 'quiet'), T('Bolt Cutter', 'CUTTER', '✂️', 'Cutters', 'quiet'),
+  T('Grappling Hook', 'HOOK', '🪝', 'Climbing Gear', 'loud'), T('Crowbar', 'CROWBAR', '🔧', 'Smashers', 'loud'), T('Sledgehammer', 'SLEDGE', '🔨', 'Smashers', 'loud'),
+  T('Pickaxe', 'PICKAXE', '⛏️', 'Dig Set', 'loud'),
 ];
 const GANGS = {
   S: { name: 'Diggers', color: '#2f6fd0', bg: '#e4eefc', block: 'South' },
@@ -58,8 +60,8 @@ const rk = (...r) => (c) => r.indexOf(c.rank) >= 0;
 const PRISON_SEC = [
   { key: 'red', name: 'NORTH BLOCK', short: 'NORTH', level: 'easy', text: 'HEARTBREAKERS ★ OR DIAMOND DOGS ●', test: (c) => c.suit === 'H' || c.suit === 'D' },
   { key: 'black', name: 'SOUTH BLOCK', short: 'SOUTH', level: 'easy', text: 'DIGGERS ▲ OR BRAWLERS ■', test: (c) => c.suit === 'S' || c.suit === 'C' },
-  { key: 'low', name: 'POCKET TOOLS', short: 'POCKET', level: 'easy', text: 'SMALL ENOUGH TO HIDE: ' + ic(1, 2, 3, 4, 5, 6, 7), test: (c) => c.rank <= 7 },
-  { key: 'high', name: 'BIG TOOLS', short: 'BIG', level: 'easy', text: 'TOO BIG TO HIDE: ' + ic(8, 9, 10, 11, 12, 13), test: (c) => c.rank >= 8 },
+  { key: 'low', name: 'CELL WORK', short: 'CELL', level: 'easy', text: 'LOCKS, SHARPS, CUTTERS: ' + ic(1, 2, 6, 4, 5, 7, 9), test: rk(1, 2, 4, 5, 6, 7, 9) },
+  { key: 'high', name: 'YARD WORK', short: 'YARD', level: 'easy', text: 'CLIMB, SMASH, DIG: ' + ic(8, 10, 11, 12, 3, 13), test: rk(3, 8, 10, 11, 12, 13) },
   { key: 'odd', name: 'QUIET TOOLS', short: 'QUIET', level: 'easy', text: 'NO NOISE: ' + ic(1, 2, 3, 4, 8, 9), test: rk(1, 2, 3, 4, 8, 9) },
   { key: 'even', name: 'LOUD TOOLS', short: 'LOUD', level: 'easy', text: 'MAKES A RACKET: ' + ic(5, 6, 7, 10, 11, 12, 13), test: rk(5, 6, 7, 10, 11, 12, 13) },
   { key: 'heart', name: 'HEARTBREAKERS', short: 'BREAKERS', level: 'medium', text: 'THE HEARTBREAKERS ★', test: (c) => c.suit === 'H' },
@@ -67,9 +69,9 @@ const PRISON_SEC = [
   { key: 'spade', name: 'DIGGERS', short: 'DIGGERS', level: 'medium', text: 'THE DIGGERS ▲', test: (c) => c.suit === 'S' },
   { key: 'club', name: 'BRAWLERS', short: 'BRAWLERS', level: 'medium', text: 'THE BRAWLERS ■', test: (c) => c.suit === 'C' },
   { key: 'face', name: 'HEAVY HITTERS', short: 'HEAVY', level: 'medium', text: ic(11) + ' CROWBAR · ' + ic(12) + ' SLEDGEHAMMER · ' + ic(13) + ' PICKAXE', test: rk(11, 12, 13) },
-  { key: 'a23', name: 'TINY TOOLS', short: 'TINY', level: 'medium', text: ic(1) + ' BOBBY PIN · ' + ic(2) + ' PAPERCLIP · ' + ic(3) + ' SPOON', test: rk(1, 2, 3) },
+  { key: 'a23', name: 'LOCK SET', short: 'LOCKS', level: 'medium', text: ic(1) + ' BOBBY PIN · ' + ic(2) + ' PAPERCLIP · ' + ic(6) + ' STOLEN KEY', test: rk(1, 2, 6) },
   { key: 'qk', name: 'DIG SET', short: 'DIG', level: 'hard', text: ic(13) + ' PICKAXE OR ' + ic(3) + ' SPOON', test: rk(3, 13) },
-  { key: 'aj', name: 'LOCKPICKS', short: 'PICKS', level: 'hard', text: ic(1) + ' BOBBY PIN OR ' + ic(2) + ' PAPERCLIP', test: rk(1, 2) },
+  { key: 'aj', name: 'SMASHERS', short: 'SMASH', level: 'hard', text: ic(11) + ' CROWBAR OR ' + ic(12) + ' SLEDGEHAMMER', test: rk(11, 12) },
   { key: 'c89', name: 'CLIMBING GEAR', short: 'CLIMB', level: 'hard', text: ic(8) + ' ROPE OR ' + ic(10) + ' GRAPPLING HOOK', test: rk(8, 10) },
   { key: 'c67', name: 'CUTTERS', short: 'CUTTERS', level: 'hard', text: ic(7) + ' HACKSAW OR ' + ic(9) + ' BOLT CUTTER', test: rk(7, 9) },
   { key: 'c45', name: 'SHARPS', short: 'SHARPS', level: 'hard', text: ic(4) + ' SHIV OR ' + ic(5) + ' NAIL FILE', test: rk(4, 5) },

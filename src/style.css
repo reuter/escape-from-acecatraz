@@ -432,3 +432,9 @@ html, body { max-width: 100%; overflow-x: clip; }
 .fan .pc.pr .ti { font-size: 30px; } .fan .pc.pr .tn { font-size: 9px; }
 @media (max-width: 560px) { .seat .pc.pr .ti { font-size: 18px; padding-bottom: 8px; } .seat .pc.pr .tn { font-size: 6px; } .seat .pc.pr .gt { font-size: 10px; } }
 .seat .known .rd { color: inherit; }
+
+.pc.pr .nz { position: absolute; right: 3px; top: 2px; font-size: 9px; line-height: 1; }
+.pc.pr .ct { display: none; position: absolute; left: 0; right: 0; bottom: 24px; text-align: center; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.pc.pr .ct.z-Cell { color: #1f6b7a; } .pc.pr .ct.z-Yard { color: #4f7a1f; }
+.pc.pr.mini .nz { display: none; } .pc.pr.xl .nz { font-size: 22px; right: 9px; top: 6px; } .pc.pr.xl .ct { display: block; }
+.me .pc.pr .nz, .fan .pc.pr .nz { font-size: 10px; }

@@ -437,6 +437,12 @@ html, body { max-width: 100%; overflow-x: clip; }
 .fan .pc.pr .ti { font-size: 30px; } .fan .pc.pr .tn { font-size: 9px; }
 @media (max-width: 560px) { .seat .pc.pr .ti { font-size: 18px; padding-bottom: 8px; } .seat .pc.pr .tn { font-size: 6px; } .seat .pc.pr .gt { font-size: 10px; } }
 .seat .known .rd { color: inherit; }
+
+.pc.pr .nz { position: absolute; right: 3px; top: 2px; font-size: 9px; line-height: 1; }
+.pc.pr .ct { display: none; position: absolute; left: 0; right: 0; bottom: 24px; text-align: center; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.pc.pr .ct.z-Cell { color: #1f6b7a; } .pc.pr .ct.z-Yard { color: #4f7a1f; }
+.pc.pr.mini .nz { display: none; } .pc.pr.xl .nz { font-size: 22px; right: 9px; top: 6px; } .pc.pr.xl .ct { display: block; }
+.me .pc.pr .nz, .fan .pc.pr .nz { font-size: 10px; }
 </style>
 <div id="app"></div>
 <script>
@@ -481,13 +487,15 @@ const PATROL_LABEL = { easy: 'EXTREME CAUTION', medium: 'MEDIUM', hard: 'RELAXED
 // 'standard' = an ordinary 52-card deck (suits and ranks). 'prison' = the standalone deck: 4 Prison Gangs x 13 Tools.
 // Rank 1..13 and suit S/H/D/C stay the internal identity, so every rule, hint and CPU decision is identical.
 const DECK = { id: 'standard', suitWord: 'suit', rankWord: 'rank', gang: null, tools: null };
-const T = (name, short, icon, size, noise) => ({ name, short, icon, size, noise });
+const T = (name, short, icon, cat, noise) => ({ name, short, icon, cat, noise, zone: ZONE_OF[cat] });
+// Six tool categories (5 pairs + the Lock Set trio), grouped into two zones: Cell Work and Yard Work.
+const ZONE_OF = { 'Lock Set': 'Cell', Sharps: 'Cell', Cutters: 'Cell', 'Climbing Gear': 'Yard', Smashers: 'Yard', 'Dig Set': 'Yard' };
 const TOOLS = [
-  T('Bobby Pin', 'PIN', '🧷', 'pocket', 'quiet'), T('Paperclip', 'CLIP', '📎', 'pocket', 'quiet'), T('Spoon', 'SPOON', '🥄', 'pocket', 'quiet'),
-  T('Shiv', 'SHIV', '🪥', 'pocket', 'quiet'), T('Nail File', 'FILE', '💅', 'pocket', 'loud'), T('Stolen Key', 'KEY', '🔑', 'pocket', 'loud'),
-  T('Hacksaw', 'HACKSAW', '🪚', 'pocket', 'loud'), T('Bedsheet Rope', 'ROPE', '🪢', 'big', 'quiet'), T('Bolt Cutter', 'CUTTER', '✂️', 'big', 'quiet'),
-  T('Grappling Hook', 'HOOK', '🪝', 'big', 'loud'), T('Crowbar', 'CROWBAR', '🔧', 'big', 'loud'), T('Sledgehammer', 'SLEDGE', '🔨', 'big', 'loud'),
-  T('Pickaxe', 'PICKAXE', '⛏️', 'big', 'loud'),
+  T('Bobby Pin', 'PIN', '🧷', 'Lock Set', 'quiet'), T('Paperclip', 'CLIP', '📎', 'Lock Set', 'quiet'), T('Spoon', 'SPOON', '🥄', 'Dig Set', 'quiet'),
+  T('Shiv', 'SHIV', '🪥', 'Sharps', 'quiet'), T('Nail File', 'FILE', '💅', 'Sharps', 'loud'), T('Stolen Key', 'KEY', '🔑', 'Lock Set', 'loud'),
+  T('Hacksaw', 'HACKSAW', '🪚', 'Cutters', 'loud'), T('Bedsheet Rope', 'ROPE', '🪢', 'Climbing Gear', 'quiet'), T('Bolt Cutter', 'CUTTER', '✂️', 'Cutters', 'quiet'),
+  T('Grappling Hook', 'HOOK', '🪝', 'Climbing Gear', 'loud'), T('Crowbar', 'CROWBAR', '🔧', 'Smashers', 'loud'), T('Sledgehammer', 'SLEDGE', '🔨', 'Smashers', 'loud'),
+  T('Pickaxe', 'PICKAXE', '⛏️', 'Dig Set', 'loud'),
 ];
 const GANGS = {
   S: { name: 'Diggers', color: '#2f6fd0', bg: '#e4eefc', block: 'South' },
@@ -500,8 +508,8 @@ const rk = (...r) => (c) => r.indexOf(c.rank) >= 0;
 const PRISON_SEC = [
   { key: 'red', name: 'NORTH BLOCK', short: 'NORTH', level: 'easy', text: 'HEARTBREAKERS ★ OR DIAMOND DOGS ●', test: (c) => c.suit === 'H' || c.suit === 'D' },
   { key: 'black', name: 'SOUTH BLOCK', short: 'SOUTH', level: 'easy', text: 'DIGGERS ▲ OR BRAWLERS ■', test: (c) => c.suit === 'S' || c.suit === 'C' },
-  { key: 'low', name: 'POCKET TOOLS', short: 'POCKET', level: 'easy', text: 'SMALL ENOUGH TO HIDE: ' + ic(1, 2, 3, 4, 5, 6, 7), test: (c) => c.rank <= 7 },
-  { key: 'high', name: 'BIG TOOLS', short: 'BIG', level: 'easy', text: 'TOO BIG TO HIDE: ' + ic(8, 9, 10, 11, 12, 13), test: (c) => c.rank >= 8 },
+  { key: 'low', name: 'CELL WORK', short: 'CELL', level: 'easy', text: 'LOCKS, SHARPS, CUTTERS: ' + ic(1, 2, 6, 4, 5, 7, 9), test: rk(1, 2, 4, 5, 6, 7, 9) },
+  { key: 'high', name: 'YARD WORK', short: 'YARD', level: 'easy', text: 'CLIMB, SMASH, DIG: ' + ic(8, 10, 11, 12, 3, 13), test: rk(3, 8, 10, 11, 12, 13) },
   { key: 'odd', name: 'QUIET TOOLS', short: 'QUIET', level: 'easy', text: 'NO NOISE: ' + ic(1, 2, 3, 4, 8, 9), test: rk(1, 2, 3, 4, 8, 9) },
   { key: 'even', name: 'LOUD TOOLS', short: 'LOUD', level: 'easy', text: 'MAKES A RACKET: ' + ic(5, 6, 7, 10, 11, 12, 13), test: rk(5, 6, 7, 10, 11, 12, 13) },
   { key: 'heart', name: 'HEARTBREAKERS', short: 'BREAKERS', level: 'medium', text: 'THE HEARTBREAKERS ★', test: (c) => c.suit === 'H' },
@@ -509,9 +517,9 @@ const PRISON_SEC = [
   { key: 'spade', name: 'DIGGERS', short: 'DIGGERS', level: 'medium', text: 'THE DIGGERS ▲', test: (c) => c.suit === 'S' },
   { key: 'club', name: 'BRAWLERS', short: 'BRAWLERS', level: 'medium', text: 'THE BRAWLERS ■', test: (c) => c.suit === 'C' },
   { key: 'face', name: 'HEAVY HITTERS', short: 'HEAVY', level: 'medium', text: ic(11) + ' CROWBAR · ' + ic(12) + ' SLEDGEHAMMER · ' + ic(13) + ' PICKAXE', test: rk(11, 12, 13) },
-  { key: 'a23', name: 'TINY TOOLS', short: 'TINY', level: 'medium', text: ic(1) + ' BOBBY PIN · ' + ic(2) + ' PAPERCLIP · ' + ic(3) + ' SPOON', test: rk(1, 2, 3) },
+  { key: 'a23', name: 'LOCK SET', short: 'LOCKS', level: 'medium', text: ic(1) + ' BOBBY PIN · ' + ic(2) + ' PAPERCLIP · ' + ic(6) + ' STOLEN KEY', test: rk(1, 2, 6) },
   { key: 'qk', name: 'DIG SET', short: 'DIG', level: 'hard', text: ic(13) + ' PICKAXE OR ' + ic(3) + ' SPOON', test: rk(3, 13) },
-  { key: 'aj', name: 'LOCKPICKS', short: 'PICKS', level: 'hard', text: ic(1) + ' BOBBY PIN OR ' + ic(2) + ' PAPERCLIP', test: rk(1, 2) },
+  { key: 'aj', name: 'SMASHERS', short: 'SMASH', level: 'hard', text: ic(11) + ' CROWBAR OR ' + ic(12) + ' SLEDGEHAMMER', test: rk(11, 12) },
   { key: 'c89', name: 'CLIMBING GEAR', short: 'CLIMB', level: 'hard', text: ic(8) + ' ROPE OR ' + ic(10) + ' GRAPPLING HOOK', test: rk(8, 10) },
   { key: 'c67', name: 'CUTTERS', short: 'CUTTERS', level: 'hard', text: ic(7) + ' HACKSAW OR ' + ic(9) + ' BOLT CUTTER', test: rk(7, 9) },
   { key: 'c45', name: 'SHARPS', short: 'SHARPS', level: 'hard', text: ic(4) + ' SHIV OR ' + ic(5) + ' NAIL FILE', test: rk(4, 5) },
@@ -1305,7 +1313,7 @@ function card(c, cls, attrs) {
   if (prison()) {
     const t = A.TOOLS[c.rank - 1];
     return '<button class="pc pr g-' + c.suit + ' ' + (cls || '') + '" ' + (attrs || '') + ' aria-label="' + esc(A.label(c)) + '">' +
-      '<span class="gt">' + A.SYM[c.suit] + '</span><span class="ti">' + t.icon + '</span><span class="tn">' + t.short + '</span></button>';
+      '<span class="gt">' + A.SYM[c.suit] + '</span><span class="nz">' + (t.noise === 'loud' ? '🔊' : '🤫') + '</span><span class="ti">' + t.icon + '</span><span class="ct z-' + t.zone + '">' + t.cat + '</span><span class="tn">' + t.short + '</span></button>';
   }
   return '<button class="pc ' + (redSuit(c.suit) ? 'red ' : '') + (cls || '') + '" ' + (attrs || '') + ' aria-label="' + esc(A.label(c)) + '">' +
     '<span class="r">' + A.RANKS[c.rank - 1] + '</span><span class="s">' + A.SYM[c.suit] + '</span><span class="big">' + A.SYM[c.suit] + '</span></button>';
@@ -1538,13 +1546,13 @@ function logHTML() {
 function prisonPage() {
   const td = 'padding:3px 6px;border-bottom:1px solid #d5dbe4;font-size:9pt;text-align:left;vertical-align:top';
   const gang = ['H', 'D', 'S', 'C'].map((k) => { const g = A.GANGS[k]; return '<tr><td style="' + td + ';font-weight:800;color:' + g.color + '">' + A.SYM[k] + ' The ' + g.name + '</td><td style="' + td + '">' + g.block + ' Block</td></tr>'; }).join('');
-  const tool = A.TOOLS.map((t, i) => '<tr><td style="' + td + ';font-size:12pt">' + t.icon + '</td><td style="' + td + ';font-weight:800">' + t.name + '</td><td style="' + td + '">' + t.size + '</td><td style="' + td + '">' + t.noise + '</td></tr>').join('');
+  const tool = A.TOOLS.map((t, i) => '<tr><td style="' + td + ';font-size:12pt">' + t.icon + '</td><td style="' + td + ';font-weight:800">' + t.name + '</td><td style="' + td + '">' + t.cat + '</td><td style="' + td + '">' + t.zone + ' Work</td><td style="' + td + '">' + t.noise + '</td></tr>').join('');
   const sec = ['easy', 'medium', 'hard'].map((lv) => '<tr><td colspan="2" style="' + td + ';font-weight:900;letter-spacing:.1em;text-transform:uppercase;background:#eaf3ee">' + lv + ' · ' + A.SEC.filter((x) => x.level === lv).length + ' cards</td></tr>' +
     A.SEC.filter((x) => x.level === lv).map((x) => '<tr><td style="' + td + ';font-weight:800;white-space:nowrap">' + x.name + '</td><td style="' + td + '">' + x.text + '</td></tr>').join('')).join('');
   return '<div class="page"><div class="hd"><h2>Prison deck edition</h2><small>Standalone deck</small></div>' +
-    '<div class="box"><p>The standalone edition replaces the standard 52-card deck with 52 Prison cards: <b>4 Prison Gangs × 13 Tools</b>. The rules do not change. A gang is a suit and a tool is a rank, so hints name a <b>gang</b> or a <b>tool</b>. The Security cards name gangs, cell blocks and tool families instead of suits, colours and numbers.</p></div>' +
+    '<div class="box"><p>The standalone edition replaces the standard 52-card deck with 52 Prison cards: <b>4 Prison Gangs × 13 Tools</b>. The rules do not change. A gang is a suit and a tool is a rank, so hints name a <b>gang</b> or a <b>tool</b>. The Security cards name gangs, cell blocks and tool categories, zones and noise instead of suits, colours and numbers. Every tool belongs to one of six categories, and the categories sit in two zones: <b>Cell Work</b> (Lock Set, Sharps, Cutters) and <b>Yard Work</b> (Climbing Gear, Smashers, Dig Set).</p></div>' +
     '<div style="display:flex;gap:12px;align-items:flex-start"><div class="box" style="flex:1"><h3>Gangs</h3><table style="border-collapse:collapse;width:100%">' + gang + '</table>' +
-    '<h3 style="margin-top:8px">Tools</h3><table style="border-collapse:collapse;width:100%"><tr><td style="' + td + '"></td><td style="' + td + ';font-weight:900">Tool</td><td style="' + td + ';font-weight:900">Size</td><td style="' + td + ';font-weight:900">Noise</td></tr>' + tool + '</table></div>' +
+    '<h3 style="margin-top:8px">Tools</h3><table style="border-collapse:collapse;width:100%"><tr><td style="' + td + '"></td><td style="' + td + ';font-weight:900">Tool</td><td style="' + td + ';font-weight:900">Category</td><td style="' + td + ';font-weight:900">Zone</td><td style="' + td + ';font-weight:900">Noise</td></tr>' + tool + '</table></div>' +
     '<div class="box" style="flex:1.25"><h3>The 17 Security cards</h3><table style="border-collapse:collapse;width:100%">' + sec + '</table></div></div>' +
     '<div class="foot"><span>Escape from Ace-catraz · Prison deck</span><span>7</span></div></div>';
 }
