@@ -254,7 +254,7 @@ function logHTML() {
 
 function prisonPage() {
   const td = 'padding:3px 6px;border-bottom:1px solid #d5dbe4;font-size:9pt;text-align:left;vertical-align:top';
-  const gang = ['H', 'D', 'S', 'C'].map((k) => { const g = A.GANGS[k]; return '<tr><td style="' + td + ';font-weight:800;color:' + g.color + '">' + A.SYM[k] + ' The ' + g.name + '</td><td style="' + td + '">' + g.block + ' Block</td></tr>'; }).join('');
+  const gang = ['H', 'D', 'S', 'C'].map((k) => { const g = A.GANGS[k]; return '<tr><td style="' + td + ';font-weight:800"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + g.color + '"></span> ' + A.SYM[k] + ' The ' + g.name + '</td><td style="' + td + '">' + g.block + ' Block</td></tr>'; }).join('');
   const tool = A.TOOLS.map((t, i) => '<tr><td style="' + td + ';font-size:12pt">' + t.icon + '</td><td style="' + td + ';font-weight:800">' + t.name + '</td><td style="' + td + '">' + t.cat + '</td><td style="' + td + '">' + t.zone + ' Work</td><td style="' + td + '">' + t.noise + '</td></tr>').join('');
   const sec = ['easy', 'medium', 'hard'].map((lv) => '<tr><td colspan="2" style="' + td + ';font-weight:900;letter-spacing:.1em;text-transform:uppercase;background:#eaf3ee">' + lv + ' · ' + A.SEC.filter((x) => x.level === lv).length + ' cards</td></tr>' +
     A.SEC.filter((x) => x.level === lv).map((x) => '<tr><td style="' + td + ';font-weight:800;white-space:nowrap">' + x.name + '</td><td style="' + td + '">' + x.text + '</td></tr>').join('')).join('');

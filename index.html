@@ -425,8 +425,8 @@ html, body { max-width: 100%; overflow-x: clip; }
 .sec .lvl.hard { background: #ffb4b4; border-color: #8a1d1d; color: #6b0f0f; }
 
 /* ---- Prison deck: gang colours and tool faces ---- */
-.g-S { --gc: #12307f; --gb: #e3e9f7; } .g-C { --gc: #2e9e6b; --gb: #e0f3ea; } .g-H { --gc: #c8102e; --gb: #fbe3e7; } .g-D { --gc: #b8860b; --gb: #f8efd4; }
-.pc.pr { color: var(--gc); border: 2px solid var(--gc); border-top-width: 6px; background: linear-gradient(var(--gb), #fff 55%); font-family: inherit; }
+.g-S { --gc: #CC79A7; --gb: #f7e6ef; } .g-C { --gc: #009E73; --gb: #d9f1e9; } .g-H { --gc: #E69F00; --gb: #fdf0d0; } .g-D { --gc: #56B4E9; --gb: #e0f1fb; }
+.pc.pr { color: #1c2530; border: 2px solid var(--gc); border-top-width: 6px; background: linear-gradient(var(--gb), #fff 55%); font-family: inherit; }
 .pc.pr .gt { position: absolute; left: 4px; top: 1px; font-size: 13px; font-weight: 900; line-height: 1; }
 .pc.pr .ti { position: absolute; inset: 0; display: grid; place-items: center; font-size: 25px; padding: 4px 0 10px; line-height: 1; }
 .pc.pr .tn { position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; font-size: 7.5px; font-weight: 900; letter-spacing: .02em; line-height: 1; }
@@ -498,24 +498,24 @@ const TOOLS = [
   T('Pickaxe', 'PICKAXE', '⛏️', 'Dig Set', 'loud'),
 ];
 const GANGS = {
-  S: { name: 'Night Shift', color: '#12307f', bg: '#e3e9f7', block: 'South' },
-  C: { name: 'Jelly Crew', color: '#2e9e6b', bg: '#e0f3ea', block: 'South' },
-  H: { name: 'Hotheads', color: '#c8102e', bg: '#fbe3e7', block: 'North' },
-  D: { name: 'Sticky Fingers', color: '#b8860b', bg: '#f8efd4', block: 'North' },
+  S: { name: 'Night Shift', color: '#CC79A7', bg: '#f7e6ef', block: 'South' },
+  C: { name: 'Jelly Crew', color: '#009E73', bg: '#d9f1e9', block: 'South' },
+  H: { name: 'Hotheads', color: '#E69F00', bg: '#fdf0d0', block: 'North' },
+  D: { name: 'Sticky Fingers', color: '#56B4E9', bg: '#e0f1fb', block: 'North' },
 };
 const ic = (...r) => r.map((k) => TOOLS[k - 1].icon).join(' ');
 const rk = (...r) => (c) => r.indexOf(c.rank) >= 0;
 const PRISON_SEC = [
-  { key: 'red', name: 'NORTH BLOCK', short: 'NORTH', level: 'easy', text: 'HOTHEADS ★ OR STICKY FINGERS ●', test: (c) => c.suit === 'H' || c.suit === 'D' },
-  { key: 'black', name: 'SOUTH BLOCK', short: 'SOUTH', level: 'easy', text: 'NIGHT SHIFT ▲ OR JELLY CREW ■', test: (c) => c.suit === 'S' || c.suit === 'C' },
+  { key: 'red', name: 'NORTH BLOCK', short: 'NORTH', level: 'easy', text: 'HOTHEADS 🔥 OR STICKY FINGERS 🍭', test: (c) => c.suit === 'H' || c.suit === 'D' },
+  { key: 'black', name: 'SOUTH BLOCK', short: 'SOUTH', level: 'easy', text: 'NIGHT SHIFT 🌙 OR JELLY CREW 🪼', test: (c) => c.suit === 'S' || c.suit === 'C' },
   { key: 'low', name: 'CELL WORK', short: 'CELL', level: 'easy', text: 'LOCKS, SHARPS, CUTTERS: ' + ic(1, 2, 6, 4, 5, 7, 9), test: rk(1, 2, 4, 5, 6, 7, 9) },
   { key: 'high', name: 'YARD WORK', short: 'YARD', level: 'easy', text: 'CLIMB, SMASH, DIG: ' + ic(8, 10, 11, 12, 3, 13), test: rk(3, 8, 10, 11, 12, 13) },
   { key: 'odd', name: 'QUIET TOOLS', short: 'QUIET', level: 'easy', text: 'NO NOISE: ' + ic(1, 2, 3, 4, 8, 9), test: rk(1, 2, 3, 4, 8, 9) },
   { key: 'even', name: 'LOUD TOOLS', short: 'LOUD', level: 'easy', text: 'MAKES A RACKET: ' + ic(5, 6, 7, 10, 11, 12, 13), test: rk(5, 6, 7, 10, 11, 12, 13) },
-  { key: 'heart', name: 'HOTHEADS', short: 'HOTHEADS', level: 'medium', text: 'THE HOTHEADS ★', test: (c) => c.suit === 'H' },
-  { key: 'diamond', name: 'STICKY FINGERS', short: 'STICKY FINGERS', level: 'medium', text: 'THE STICKY FINGERS ●', test: (c) => c.suit === 'D' },
-  { key: 'spade', name: 'NIGHT SHIFT', short: 'NIGHT SHIFT', level: 'medium', text: 'THE NIGHT SHIFT ▲', test: (c) => c.suit === 'S' },
-  { key: 'club', name: 'JELLY CREW', short: 'JELLY CREW', level: 'medium', text: 'THE JELLY CREW ■', test: (c) => c.suit === 'C' },
+  { key: 'heart', name: 'HOTHEADS', short: 'HOTHEADS', level: 'medium', text: 'THE HOTHEADS 🔥', test: (c) => c.suit === 'H' },
+  { key: 'diamond', name: 'STICKY FINGERS', short: 'STICKY FINGERS', level: 'medium', text: 'THE STICKY FINGERS 🍭', test: (c) => c.suit === 'D' },
+  { key: 'spade', name: 'NIGHT SHIFT', short: 'NIGHT SHIFT', level: 'medium', text: 'THE NIGHT SHIFT 🌙', test: (c) => c.suit === 'S' },
+  { key: 'club', name: 'JELLY CREW', short: 'JELLY CREW', level: 'medium', text: 'THE JELLY CREW 🪼', test: (c) => c.suit === 'C' },
   { key: 'face', name: 'HEAVY HITTERS', short: 'HEAVY', level: 'medium', text: ic(11) + ' CROWBAR · ' + ic(12) + ' SLEDGEHAMMER · ' + ic(13) + ' PICKAXE', test: rk(11, 12, 13) },
   { key: 'a23', name: 'LOCK SET', short: 'LOCKS', level: 'medium', text: ic(1) + ' BOBBY PIN · ' + ic(2) + ' PAPERCLIP · ' + ic(6) + ' STOLEN KEY', test: rk(1, 2, 6) },
   { key: 'qk', name: 'DIG SET', short: 'DIG', level: 'hard', text: ic(13) + ' PICKAXE OR ' + ic(3) + ' SPOON', test: rk(3, 13) },
@@ -528,7 +528,7 @@ const PACKS = {
   standard: { id: 'standard', suitWord: 'suit', rankWord: 'rank', gang: null, tools: null,
     SYM: Object.assign({}, SYM), SUIT_NAME: Object.assign({}, SUIT_NAME), RANKS: RANKS.slice(), RANK_WORD: RANK_WORD.slice(), SEC: SEC.slice() },
   prison: { id: 'prison', suitWord: 'gang', rankWord: 'tool', gang: GANGS, tools: TOOLS,
-    SYM: { S: '▲', C: '■', H: '★', D: '●' }, SUIT_NAME: { S: 'Night Shift', C: 'Jelly Crew', H: 'Hotheads', D: 'Sticky Fingers' },
+    SYM: { S: '🌙', C: '🪼', H: '🔥', D: '🍭' }, SUIT_NAME: { S: 'Night Shift', C: 'Jelly Crew', H: 'Hotheads', D: 'Sticky Fingers' },
     RANKS: TOOLS.map((t) => t.icon), RANK_WORD: TOOLS.map((t) => t.name), SEC: PRISON_SEC },
 };
 function setDeck(id) {
@@ -1545,7 +1545,7 @@ function logHTML() {
 
 function prisonPage() {
   const td = 'padding:3px 6px;border-bottom:1px solid #d5dbe4;font-size:9pt;text-align:left;vertical-align:top';
-  const gang = ['H', 'D', 'S', 'C'].map((k) => { const g = A.GANGS[k]; return '<tr><td style="' + td + ';font-weight:800;color:' + g.color + '">' + A.SYM[k] + ' The ' + g.name + '</td><td style="' + td + '">' + g.block + ' Block</td></tr>'; }).join('');
+  const gang = ['H', 'D', 'S', 'C'].map((k) => { const g = A.GANGS[k]; return '<tr><td style="' + td + ';font-weight:800"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + g.color + '"></span> ' + A.SYM[k] + ' The ' + g.name + '</td><td style="' + td + '">' + g.block + ' Block</td></tr>'; }).join('');
   const tool = A.TOOLS.map((t, i) => '<tr><td style="' + td + ';font-size:12pt">' + t.icon + '</td><td style="' + td + ';font-weight:800">' + t.name + '</td><td style="' + td + '">' + t.cat + '</td><td style="' + td + '">' + t.zone + ' Work</td><td style="' + td + '">' + t.noise + '</td></tr>').join('');
   const sec = ['easy', 'medium', 'hard'].map((lv) => '<tr><td colspan="2" style="' + td + ';font-weight:900;letter-spacing:.1em;text-transform:uppercase;background:#eaf3ee">' + lv + ' · ' + A.SEC.filter((x) => x.level === lv).length + ' cards</td></tr>' +
     A.SEC.filter((x) => x.level === lv).map((x) => '<tr><td style="' + td + ';font-weight:800;white-space:nowrap">' + x.name + '</td><td style="' + td + '">' + x.text + '</td></tr>').join('')).join('');
