@@ -50,24 +50,24 @@ const TOOLS = [
   T('Pickaxe', 'PICKAXE', '⛏️', 'Dig Set', 'loud'),
 ];
 const GANGS = {
-  S: { name: 'Diggers', color: '#12307f', bg: '#e3e9f7', block: 'South' },
-  C: { name: 'Brawlers', color: '#2e9e6b', bg: '#e0f3ea', block: 'South' },
-  H: { name: 'Heartbreakers', color: '#c8102e', bg: '#fbe3e7', block: 'North' },
-  D: { name: 'Diamond Dogs', color: '#b8860b', bg: '#f8efd4', block: 'North' },
+  S: { name: 'Night Shift', color: '#12307f', bg: '#e3e9f7', block: 'South' },
+  C: { name: 'Jelly Crew', color: '#2e9e6b', bg: '#e0f3ea', block: 'South' },
+  H: { name: 'Hotheads', color: '#c8102e', bg: '#fbe3e7', block: 'North' },
+  D: { name: 'Sticky Fingers', color: '#b8860b', bg: '#f8efd4', block: 'North' },
 };
 const ic = (...r) => r.map((k) => TOOLS[k - 1].icon).join(' ');
 const rk = (...r) => (c) => r.indexOf(c.rank) >= 0;
 const PRISON_SEC = [
-  { key: 'red', name: 'NORTH BLOCK', short: 'NORTH', level: 'easy', text: 'HEARTBREAKERS ★ OR DIAMOND DOGS ●', test: (c) => c.suit === 'H' || c.suit === 'D' },
-  { key: 'black', name: 'SOUTH BLOCK', short: 'SOUTH', level: 'easy', text: 'DIGGERS ▲ OR BRAWLERS ■', test: (c) => c.suit === 'S' || c.suit === 'C' },
+  { key: 'red', name: 'NORTH BLOCK', short: 'NORTH', level: 'easy', text: 'HOTHEADS ★ OR STICKY FINGERS ●', test: (c) => c.suit === 'H' || c.suit === 'D' },
+  { key: 'black', name: 'SOUTH BLOCK', short: 'SOUTH', level: 'easy', text: 'NIGHT SHIFT ▲ OR JELLY CREW ■', test: (c) => c.suit === 'S' || c.suit === 'C' },
   { key: 'low', name: 'CELL WORK', short: 'CELL', level: 'easy', text: 'LOCKS, SHARPS, CUTTERS: ' + ic(1, 2, 6, 4, 5, 7, 9), test: rk(1, 2, 4, 5, 6, 7, 9) },
   { key: 'high', name: 'YARD WORK', short: 'YARD', level: 'easy', text: 'CLIMB, SMASH, DIG: ' + ic(8, 10, 11, 12, 3, 13), test: rk(3, 8, 10, 11, 12, 13) },
   { key: 'odd', name: 'QUIET TOOLS', short: 'QUIET', level: 'easy', text: 'NO NOISE: ' + ic(1, 2, 3, 4, 8, 9), test: rk(1, 2, 3, 4, 8, 9) },
   { key: 'even', name: 'LOUD TOOLS', short: 'LOUD', level: 'easy', text: 'MAKES A RACKET: ' + ic(5, 6, 7, 10, 11, 12, 13), test: rk(5, 6, 7, 10, 11, 12, 13) },
-  { key: 'heart', name: 'HEARTBREAKERS', short: 'BREAKERS', level: 'medium', text: 'THE HEARTBREAKERS ★', test: (c) => c.suit === 'H' },
-  { key: 'diamond', name: 'DIAMOND DOGS', short: 'DOGS', level: 'medium', text: 'THE DIAMOND DOGS ●', test: (c) => c.suit === 'D' },
-  { key: 'spade', name: 'DIGGERS', short: 'DIGGERS', level: 'medium', text: 'THE DIGGERS ▲', test: (c) => c.suit === 'S' },
-  { key: 'club', name: 'BRAWLERS', short: 'BRAWLERS', level: 'medium', text: 'THE BRAWLERS ■', test: (c) => c.suit === 'C' },
+  { key: 'heart', name: 'HOTHEADS', short: 'HOTHEADS', level: 'medium', text: 'THE HOTHEADS ★', test: (c) => c.suit === 'H' },
+  { key: 'diamond', name: 'STICKY FINGERS', short: 'STICKY FINGERS', level: 'medium', text: 'THE STICKY FINGERS ●', test: (c) => c.suit === 'D' },
+  { key: 'spade', name: 'NIGHT SHIFT', short: 'NIGHT SHIFT', level: 'medium', text: 'THE NIGHT SHIFT ▲', test: (c) => c.suit === 'S' },
+  { key: 'club', name: 'JELLY CREW', short: 'JELLY CREW', level: 'medium', text: 'THE JELLY CREW ■', test: (c) => c.suit === 'C' },
   { key: 'face', name: 'HEAVY HITTERS', short: 'HEAVY', level: 'medium', text: ic(11) + ' CROWBAR · ' + ic(12) + ' SLEDGEHAMMER · ' + ic(13) + ' PICKAXE', test: rk(11, 12, 13) },
   { key: 'a23', name: 'LOCK SET', short: 'LOCKS', level: 'medium', text: ic(1) + ' BOBBY PIN · ' + ic(2) + ' PAPERCLIP · ' + ic(6) + ' STOLEN KEY', test: rk(1, 2, 6) },
   { key: 'qk', name: 'DIG SET', short: 'DIG', level: 'hard', text: ic(13) + ' PICKAXE OR ' + ic(3) + ' SPOON', test: rk(3, 13) },
@@ -80,7 +80,7 @@ const PACKS = {
   standard: { id: 'standard', suitWord: 'suit', rankWord: 'rank', gang: null, tools: null,
     SYM: Object.assign({}, SYM), SUIT_NAME: Object.assign({}, SUIT_NAME), RANKS: RANKS.slice(), RANK_WORD: RANK_WORD.slice(), SEC: SEC.slice() },
   prison: { id: 'prison', suitWord: 'gang', rankWord: 'tool', gang: GANGS, tools: TOOLS,
-    SYM: { S: '▲', C: '■', H: '★', D: '●' }, SUIT_NAME: { S: 'Diggers', C: 'Brawlers', H: 'Heartbreakers', D: 'Diamond Dogs' },
+    SYM: { S: '▲', C: '■', H: '★', D: '●' }, SUIT_NAME: { S: 'Night Shift', C: 'Jelly Crew', H: 'Hotheads', D: 'Sticky Fingers' },
     RANKS: TOOLS.map((t) => t.icon), RANK_WORD: TOOLS.map((t) => t.name), SEC: PRISON_SEC },
 };
 function setDeck(id) {
