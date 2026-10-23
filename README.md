@@ -58,3 +58,5 @@ The setup screen has a **Cards** switch:
 
 - **Standard 52-card deck** (add-on edition): suits and ranks, plus the 18 Security cards.
 - **Prison deck** (standalone edition): 4 Prison Gangs x 13 Tools (gang symbols 🔥 🍭 🌙 🪼 replace the card suits; six tool categories in Cell Work and Yard Work zones; gangs: Hotheads, Sticky Fingers, Night Shift, Jelly Crew). Same rules. A gang is a suit and a tool is a rank, so hints name a gang or a tool. The 17 Security cards name gangs, cell blocks and tool families.
+
+Prison deck rules: `Escape_from_Ace-catraz_Prison_Deck_Rules.pdf` (6 pages, source `src/rulebook_prison.js`). Prison mode's How to play shows it instead of the standard rulebook.

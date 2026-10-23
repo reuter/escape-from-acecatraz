@@ -264,25 +264,12 @@ function logHTML() {
   return '<aside><section class="panel"><h2>Log</h2><div class="log" id="log">' + G.log.map((l) => '<div class="' + (!ui.hot && l.p === 0 ? 'me' : l.p == null ? 'sys' : '') + '">' + esc(l.text) + '</div>').join('') + '</div></section></aside>';
 }
 
-function prisonPage() {
-  const td = 'padding:3px 6px;border-bottom:1px solid #d5dbe4;font-size:9pt;text-align:left;vertical-align:top';
-  const gang = ['H', 'D', 'S', 'C'].map((k) => { const g = A.GANGS[k]; return '<tr><td style="' + td + ';font-weight:800"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + g.color + '"></span> ' + A.SYM[k] + ' The ' + g.name + '</td><td style="' + td + '">' + g.block + ' Block</td></tr>'; }).join('');
-  const tool = A.TOOLS.map((t, i) => '<tr><td style="' + td + ';font-size:12pt">' + t.icon + '</td><td style="' + td + ';font-weight:800">' + t.name + '</td><td style="' + td + '">' + t.cat + '</td><td style="' + td + '">' + t.zone + ' Work</td><td style="' + td + '">' + t.noise + '</td></tr>').join('');
-  const sec = ['easy', 'medium', 'hard'].map((lv) => '<tr><td colspan="2" style="' + td + ';font-weight:900;letter-spacing:.1em;text-transform:uppercase;background:#eaf3ee">' + lv + ' · ' + A.SEC.filter((x) => x.level === lv).length + ' cards</td></tr>' +
-    A.SEC.filter((x) => x.level === lv).map((x) => '<tr><td style="' + td + ';font-weight:800;white-space:nowrap">' + x.name + '</td><td style="' + td + '">' + x.text + '</td></tr>').join('')).join('');
-  return '<div class="page"><div class="hd"><h2>Prison deck edition</h2><small>Standalone deck</small></div>' +
-    '<div class="box"><p>The standalone edition replaces the standard 52-card deck with 52 Prison cards: <b>4 Prison Gangs × 13 Tools</b>. The rules do not change. A gang is a suit and a tool is a rank, so hints name a <b>gang</b> or a <b>tool</b>. The Security cards name gangs, cell blocks and tool categories, zones and noise instead of suits, colours and numbers. Every tool belongs to one of six categories, and the categories sit in two zones: <b>Cell Work</b> (Lock Set, Sharps, Cutters) and <b>Yard Work</b> (Climbing Gear, Smashers, Dig Set).</p></div>' +
-    '<div style="display:flex;gap:12px;align-items:flex-start"><div class="box" style="flex:1"><h3>Gangs</h3><table style="border-collapse:collapse;width:100%">' + gang + '</table>' +
-    '<h3 style="margin-top:8px">Tools</h3><table style="border-collapse:collapse;width:100%"><tr><td style="' + td + '"></td><td style="' + td + ';font-weight:900">Tool</td><td style="' + td + ';font-weight:900">Category</td><td style="' + td + ';font-weight:900">Zone</td><td style="' + td + ';font-weight:900">Noise</td></tr>' + tool + '</table></div>' +
-    '<div class="box" style="flex:1.25"><h3>The 17 Security cards</h3><table style="border-collapse:collapse;width:100%">' + sec + '</table></div></div>' +
-    '<div class="foot"><span>Escape from Ace-catraz · Prison deck</span><span>7</span></div></div>';
-}
 function helpHTML() {
   // The rulebook is the same document as the printable PDF, shown page by page in a framed viewer.
   return '<div class="overlay rbover"><div class="rbdlg" role="dialog" aria-label="How to play">' +
-    '<div class="rbbar"><b>How to play</b><span class="rbbtns"><a class="btn sm" href="Escape_from_Ace-catraz_Rules.pdf" target="_blank" rel="noopener">Printable PDF</a>' +
+    '<div class="rbbar"><b>How to play</b><span class="rbbtns"><a class="btn sm" href="' + (prison() ? 'Escape_from_Ace-catraz_Prison_Deck_Rules.pdf' : 'Escape_from_Ace-catraz_Rules.pdf') + '" target="_blank" rel="noopener">Printable PDF</a>' +
     '<button class="btn sm primary" data-act="closehelp">' + (G ? 'Back to the game' : 'Close') + '</button></span></div>' +
-    '<iframe class="rbframe" title="Escape from Ace-catraz rules" srcdoc="' + esc(window.RULEBOOK_HTML + (prison() ? prisonPage() : '')) + '"></iframe></div></div>';
+    '<iframe class="rbframe" title="Escape from Ace-catraz rules" srcdoc="' + esc(prison() ? window.RULEBOOK_PRISON_HTML : window.RULEBOOK_HTML) + '"></iframe></div></div>';
 }
 
 function cardsDialogHTML() {

@@ -8,6 +8,7 @@ echo '<div id="app"></div>'
 echo '<script>'; cat src/engine.js; echo '</script>'
 echo '<script>'; cat src/cpu.js; echo '</script>'
 echo '<script>'; cat src/rulebook.js; echo '</script>'
+echo '<script>'; cat src/rulebook_prison.js; echo '</script>'
 echo '<script>'; cat src/demo.js; echo '</script>'
 echo '<script>'; cat src/ui.js; echo '</script>'
 } > index.html
