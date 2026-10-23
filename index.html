@@ -491,23 +491,23 @@ const TOOLS = [
 ];
 const GANGS = {
   S: { name: 'Diggers', color: '#2f6fd0', bg: '#e4eefc', block: 'South' },
-  C: { name: 'Knuckles', color: '#7a4fd1', bg: '#eee7fb', block: 'South' },
+  C: { name: 'Brawlers', color: '#7a4fd1', bg: '#eee7fb', block: 'South' },
   H: { name: 'Heartbreakers', color: '#d1334a', bg: '#fde6ea', block: 'North' },
   D: { name: 'Diamond Dogs', color: '#d9890a', bg: '#fdf0d9', block: 'North' },
 };
 const ic = (...r) => r.map((k) => TOOLS[k - 1].icon).join(' ');
 const rk = (...r) => (c) => r.indexOf(c.rank) >= 0;
 const PRISON_SEC = [
-  { key: 'red', name: 'NORTH BLOCK', short: 'NORTH', level: 'easy', text: 'HEARTBREAKERS ♥ OR DIAMOND DOGS ♦', test: (c) => c.suit === 'H' || c.suit === 'D' },
-  { key: 'black', name: 'SOUTH BLOCK', short: 'SOUTH', level: 'easy', text: 'DIGGERS ♠ OR KNUCKLES ♣', test: (c) => c.suit === 'S' || c.suit === 'C' },
+  { key: 'red', name: 'NORTH BLOCK', short: 'NORTH', level: 'easy', text: 'HEARTBREAKERS ★ OR DIAMOND DOGS ●', test: (c) => c.suit === 'H' || c.suit === 'D' },
+  { key: 'black', name: 'SOUTH BLOCK', short: 'SOUTH', level: 'easy', text: 'DIGGERS ▲ OR BRAWLERS ■', test: (c) => c.suit === 'S' || c.suit === 'C' },
   { key: 'low', name: 'POCKET TOOLS', short: 'POCKET', level: 'easy', text: 'SMALL ENOUGH TO HIDE: ' + ic(1, 2, 3, 4, 5, 6, 7), test: (c) => c.rank <= 7 },
   { key: 'high', name: 'BIG TOOLS', short: 'BIG', level: 'easy', text: 'TOO BIG TO HIDE: ' + ic(8, 9, 10, 11, 12, 13), test: (c) => c.rank >= 8 },
   { key: 'odd', name: 'QUIET TOOLS', short: 'QUIET', level: 'easy', text: 'NO NOISE: ' + ic(1, 2, 3, 4, 8, 9), test: rk(1, 2, 3, 4, 8, 9) },
   { key: 'even', name: 'LOUD TOOLS', short: 'LOUD', level: 'easy', text: 'MAKES A RACKET: ' + ic(5, 6, 7, 10, 11, 12, 13), test: rk(5, 6, 7, 10, 11, 12, 13) },
-  { key: 'heart', name: 'HEARTBREAKERS', short: 'HEARTS', level: 'medium', text: 'THE HEARTBREAKERS ♥', test: (c) => c.suit === 'H' },
-  { key: 'diamond', name: 'DIAMOND DOGS', short: 'DOGS', level: 'medium', text: 'THE DIAMOND DOGS ♦', test: (c) => c.suit === 'D' },
-  { key: 'spade', name: 'DIGGERS', short: 'DIGGERS', level: 'medium', text: 'THE DIGGERS ♠', test: (c) => c.suit === 'S' },
-  { key: 'club', name: 'KNUCKLES', short: 'KNUCKLES', level: 'medium', text: 'THE KNUCKLES ♣', test: (c) => c.suit === 'C' },
+  { key: 'heart', name: 'HEARTBREAKERS', short: 'BREAKERS', level: 'medium', text: 'THE HEARTBREAKERS ★', test: (c) => c.suit === 'H' },
+  { key: 'diamond', name: 'DIAMOND DOGS', short: 'DOGS', level: 'medium', text: 'THE DIAMOND DOGS ●', test: (c) => c.suit === 'D' },
+  { key: 'spade', name: 'DIGGERS', short: 'DIGGERS', level: 'medium', text: 'THE DIGGERS ▲', test: (c) => c.suit === 'S' },
+  { key: 'club', name: 'BRAWLERS', short: 'BRAWLERS', level: 'medium', text: 'THE BRAWLERS ■', test: (c) => c.suit === 'C' },
   { key: 'face', name: 'HEAVY HITTERS', short: 'HEAVY', level: 'medium', text: ic(11) + ' CROWBAR · ' + ic(12) + ' SLEDGEHAMMER · ' + ic(13) + ' PICKAXE', test: rk(11, 12, 13) },
   { key: 'a23', name: 'TINY TOOLS', short: 'TINY', level: 'medium', text: ic(1) + ' BOBBY PIN · ' + ic(2) + ' PAPERCLIP · ' + ic(3) + ' SPOON', test: rk(1, 2, 3) },
   { key: 'qk', name: 'DIG SET', short: 'DIG', level: 'hard', text: ic(13) + ' PICKAXE OR ' + ic(3) + ' SPOON', test: rk(3, 13) },
@@ -520,7 +520,7 @@ const PACKS = {
   standard: { id: 'standard', suitWord: 'suit', rankWord: 'rank', gang: null, tools: null,
     SYM: Object.assign({}, SYM), SUIT_NAME: Object.assign({}, SUIT_NAME), RANKS: RANKS.slice(), RANK_WORD: RANK_WORD.slice(), SEC: SEC.slice() },
   prison: { id: 'prison', suitWord: 'gang', rankWord: 'tool', gang: GANGS, tools: TOOLS,
-    SYM: Object.assign({}, SYM), SUIT_NAME: { S: 'Diggers', C: 'Knuckles', H: 'Heartbreakers', D: 'Diamond Dogs' },
+    SYM: { S: '▲', C: '■', H: '★', D: '●' }, SUIT_NAME: { S: 'Diggers', C: 'Brawlers', H: 'Heartbreakers', D: 'Diamond Dogs' },
     RANKS: TOOLS.map((t) => t.icon), RANK_WORD: TOOLS.map((t) => t.name), SEC: PRISON_SEC },
 };
 function setDeck(id) {
