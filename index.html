@@ -425,7 +425,7 @@ html, body { max-width: 100%; overflow-x: clip; }
 .sec .lvl.hard { background: #ffb4b4; border-color: #8a1d1d; color: #6b0f0f; }
 
 /* ---- Prison deck: gang colours and tool faces ---- */
-.g-S { --gc: #2f6fd0; --gb: #e4eefc; } .g-C { --gc: #7a4fd1; --gb: #eee7fb; } .g-H { --gc: #d1334a; --gb: #fde6ea; } .g-D { --gc: #d9890a; --gb: #fdf0d9; }
+.g-S { --gc: #12307f; --gb: #e3e9f7; } .g-C { --gc: #2e9e6b; --gb: #e0f3ea; } .g-H { --gc: #c8102e; --gb: #fbe3e7; } .g-D { --gc: #b8860b; --gb: #f8efd4; }
 .pc.pr { color: var(--gc); border: 2px solid var(--gc); border-top-width: 6px; background: linear-gradient(var(--gb), #fff 55%); font-family: inherit; }
 .pc.pr .gt { position: absolute; left: 4px; top: 1px; font-size: 13px; font-weight: 900; line-height: 1; }
 .pc.pr .ti { position: absolute; inset: 0; display: grid; place-items: center; font-size: 25px; padding: 4px 0 10px; line-height: 1; }
@@ -498,10 +498,10 @@ const TOOLS = [
   T('Pickaxe', 'PICKAXE', '⛏️', 'Dig Set', 'loud'),
 ];
 const GANGS = {
-  S: { name: 'Diggers', color: '#2f6fd0', bg: '#e4eefc', block: 'South' },
-  C: { name: 'Brawlers', color: '#7a4fd1', bg: '#eee7fb', block: 'South' },
-  H: { name: 'Heartbreakers', color: '#d1334a', bg: '#fde6ea', block: 'North' },
-  D: { name: 'Diamond Dogs', color: '#d9890a', bg: '#fdf0d9', block: 'North' },
+  S: { name: 'Diggers', color: '#12307f', bg: '#e3e9f7', block: 'South' },
+  C: { name: 'Brawlers', color: '#2e9e6b', bg: '#e0f3ea', block: 'South' },
+  H: { name: 'Heartbreakers', color: '#c8102e', bg: '#fbe3e7', block: 'North' },
+  D: { name: 'Diamond Dogs', color: '#b8860b', bg: '#f8efd4', block: 'North' },
 };
 const ic = (...r) => r.map((k) => TOOLS[k - 1].icon).join(' ');
 const rk = (...r) => (c) => r.indexOf(c.rank) >= 0;

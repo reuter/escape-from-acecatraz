@@ -50,10 +50,10 @@ const TOOLS = [
   T('Pickaxe', 'PICKAXE', '⛏️', 'Dig Set', 'loud'),
 ];
 const GANGS = {
-  S: { name: 'Diggers', color: '#2f6fd0', bg: '#e4eefc', block: 'South' },
-  C: { name: 'Brawlers', color: '#7a4fd1', bg: '#eee7fb', block: 'South' },
-  H: { name: 'Heartbreakers', color: '#d1334a', bg: '#fde6ea', block: 'North' },
-  D: { name: 'Diamond Dogs', color: '#d9890a', bg: '#fdf0d9', block: 'North' },
+  S: { name: 'Diggers', color: '#12307f', bg: '#e3e9f7', block: 'South' },
+  C: { name: 'Brawlers', color: '#2e9e6b', bg: '#e0f3ea', block: 'South' },
+  H: { name: 'Heartbreakers', color: '#c8102e', bg: '#fbe3e7', block: 'North' },
+  D: { name: 'Diamond Dogs', color: '#b8860b', bg: '#f8efd4', block: 'North' },
 };
 const ic = (...r) => r.map((k) => TOOLS[k - 1].icon).join(' ');
 const rk = (...r) => (c) => r.indexOf(c.rank) >= 0;
