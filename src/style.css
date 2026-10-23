@@ -438,3 +438,63 @@ html, body { max-width: 100%; overflow-x: clip; }
 .pc.pr .ct.z-Cell { color: #1f6b7a; } .pc.pr .ct.z-Yard { color: #4f7a1f; }
 .pc.pr.mini .nz { display: none; } .pc.pr.xl .nz { font-size: 22px; right: 9px; top: 6px; } .pc.pr.xl .ct { display: block; }
 .me .pc.pr .nz, .fan .pc.pr .nz { font-size: 10px; }
+
+/* ===== Prison deck: security cards (match the printed design) ===== */
+body.prison { --ink: #1c2530; --concrete: #efe9db; --steel: #44546a; --lamp: #F0E442; --navy1: #1a2740; --navy2: #0e1626; }
+.sec.pr, .pat.pr { font-family: inherit; }
+.sec.up.pr { padding: 0; background: var(--concrete); border: 3px solid var(--ink); color: var(--ink); align-items: stretch; justify-content: flex-start; text-align: center; }
+.sec.pr .ph { flex: 0 0 22px; background: var(--ink); color: var(--concrete); display: flex; align-items: center; justify-content: space-between; padding: 0 7px; font-weight: 900; font-size: 7.5px; letter-spacing: .2em; }
+.locks { display: inline-flex; gap: 2px; align-items: center; }
+.locks .lk { display: inline-flex; width: 9px; height: 10px; opacity: .3; } .locks .lk.on { opacity: 1; } .locks .lk svg { width: 100%; height: 100%; }
+.locks.tiny .lk { width: 8px; height: 9px; } .locks.big .lk { width: 18px; height: 21px; }
+.sec.pr .pt { flex: 0 0 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 4px; overflow: hidden; }
+.sec.pr .pt small { font-weight: 800; font-size: 6.5px; letter-spacing: .14em; color: #4a5565; }
+.sec.pr .nm, .pat.pr .nm { font-family: 'Barlow Condensed', Figtree, sans-serif; font-weight: 800; font-size: 25px; line-height: 1; letter-spacing: .02em; white-space: nowrap; }
+.sec.pr .pm { flex: 1 1 0; min-height: 0; margin: 0 6px; background: #fff; border: 2px solid var(--ink); border-radius: 8px; padding: 3px; display: flex; align-items: center; justify-content: center; }
+.sec.pr .pf { flex: 0 0 24px; display: flex; align-items: center; justify-content: center; }
+.sec.pr .lvp { background: var(--ink); color: var(--concrete); border-radius: 999px; padding: 2px 10px; font-weight: 900; font-size: 8px; letter-spacing: .14em; }
+.chips2 { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px; width: 100%; }
+.chips2 em { font-style: normal; font-weight: 900; font-size: 7px; letter-spacing: .08em; color: #4a5565; }
+.chip2 { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1.5px solid var(--steel); background: #f6f2e6; border-radius: 5px; line-height: 1; padding: 2px 1px; color: var(--ink); }
+.chip2 b { font-weight: 400; } .chip2 u { text-decoration: none; font-weight: 900; letter-spacing: .02em; text-align: center; }
+.chips2.sm .chip2 { width: 23px; } .chips2.sm .chip2 b { font-size: 13px; } .chips2.sm .chip2 u { display: none; }
+.chips2.md .chip2 { width: 34px; } .chips2.md .chip2 b { font-size: 18px; } .chips2.md .chip2 u { font-size: 5px; margin-top: 2px; }
+.chips2.lg .chip2 { flex: 1 1 0; min-width: 0; padding: 5px 1px; } .chips2.lg .chip2 b { font-size: 26px; } .chips2.lg .chip2 u { font-size: 6px; margin-top: 3px; }
+/* face-down plan cards */
+.sec.down.pr { background: var(--ink); border-color: var(--ink); color: var(--concrete); gap: 8px; }
+.sec.down.pr small { letter-spacing: .24em; font-size: 8px; } .sec.down.pr b { font-family: 'Barlow Condensed', Figtree, sans-serif; font-weight: 800; font-size: 26px; letter-spacing: .06em; }
+.sec.down.pr.medium, .sec.down.pr.hard { color: var(--concrete); }
+/* patrol */
+.pat.pr { background: linear-gradient(180deg, var(--navy1), var(--navy2)); border: 3px solid #05080f; color: var(--concrete); }
+.pat.pr .pill { background: #05080f; color: var(--concrete); }
+.pat.pr .not { font-family: 'Barlow Condensed', Figtree, sans-serif; font-weight: 800; font-size: 11px; letter-spacing: .3em; text-indent: .3em; color: var(--lamp); line-height: 1; }
+.pat.pr .nm { font-size: 19px; }
+.pat.pr .dn { background: #070c16; border: 1.5px solid #5e6674; color: var(--concrete); padding: 2px; }
+.pat.pr .chip2 { background: #1f2b44; border-color: #8a96ad; color: var(--concrete); }
+.pat.pr .chips2 em { color: #a9b4c6; }
+.pat.pr:not(.full) .chips2.sm .chip2 { width: 15px; } .pat.pr:not(.full) .chips2.sm .chip2 b { font-size: 9px; }
+.pat.pr:not(.full) .chips2 .chip2 u { display: none; } .pat.pr:not(.full) .chips2.lg .chip2 b, .pat.pr:not(.full) .chips2.md .chip2 b { font-size: 13px; }
+.pat.pr:not(.full) .chip2 { padding: 1px; }
+.pat.pr.mini .dn { display: none; } .pat.pr.mini .not { display: none; } .pat.pr.mini .nm { font-size: 15px; }
+.pat.pr.mini.tall .dn { display: block; } .pat.pr.mini.tall .not { display: block; font-size: 8px; }
+.pat.pr.full { padding: 0; align-items: stretch; justify-content: flex-start; gap: 0; }
+.pat.pr.full .ph { flex: 0 0 22px; background: #05080f; display: flex; align-items: center; justify-content: space-between; padding: 0 7px; font-weight: 900; font-size: 7.5px; letter-spacing: .24em; }
+.pat.pr.full .ph svg { width: 14px; height: 10px; }
+.pat.pr.full .pt { flex: 0 0 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.pat.pr.full .not { font-size: 14px; } .pat.pr.full .nm { font-size: 24px; flex: 0 0 auto; margin: 0; }
+.pat.pr.full .pt small { font-weight: 800; font-size: 6px; letter-spacing: .14em; color: #a9b4c6; margin-top: 3px; }
+.pat.pr.full .pm { flex: 1 1 0; min-height: 0; margin: 0 6px; background: #070c16; border: 2px solid #5e6674; border-radius: 8px; padding: 3px; display: flex; align-items: center; justify-content: center; }
+.pat.pr.full .pf { flex: 0 0 26px; display: flex; align-items: center; justify-content: space-between; padding: 0 7px; }
+.bars { display: inline-flex; gap: 2px; } .bars i { width: 11px; height: 5px; border-radius: 2px; background: #3a4558; } .bars i.on { background: var(--lamp); }
+.pat.pr .plv2 { font-weight: 900; font-size: 6.5px; letter-spacing: .1em; color: var(--lamp); }
+/* tiles */
+body.prison .mo.up { background: var(--concrete); border-color: var(--ink); color: var(--ink); }
+body.prison .mo.down, body.prison .mo.down.medium, body.prison .mo.down.hard { background: var(--ink); border-color: var(--ink); color: var(--concrete); }
+body.prison .mo .locks { margin-top: 2px; } body.prison .mo.up .locks { color: var(--ink); } body.prison .mo.down .locks { color: var(--concrete); }
+body.prison .mo b { font-family: 'Barlow Condensed', Figtree, sans-serif; font-weight: 800; letter-spacing: .03em; }
+body.prison .dt, body.prison .dt.medium, body.prison .dt.hard { background: var(--ink); color: var(--concrete); border-color: var(--ink); }
+body.prison .dt b { font-family: 'Barlow Condensed', Figtree, sans-serif; font-size: 13px; letter-spacing: .06em; }
+body.prison .dt .locks { color: var(--concrete); }
+body.prison .bar { background: var(--ink); }
+body.prison .stack.patrol, body.prison .stack.patrol.caution, body.prison .stack.patrol.med, body.prison .stack.patrol.relaxed { background: linear-gradient(180deg, #1a2740, #0e1626); color: #efe9db; border-color: #05080f; }
+body.prison .stack.patrol b { color: var(--lamp); font-family: 'Barlow Condensed', Figtree, sans-serif; letter-spacing: .06em; }

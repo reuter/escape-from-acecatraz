@@ -76,6 +76,29 @@ const PRISON_SEC = [
   { key: 'c67', name: 'CUTTERS', short: 'CUTTERS', level: 'hard', text: ic(7) + ' HACKSAW OR ' + ic(9) + ' BOLT CUTTER', test: rk(7, 9) },
   { key: 'c45', name: 'SHARPS', short: 'SHARPS', level: 'hard', text: ic(4) + ' SHIV OR ' + ic(5) + ' NAIL FILE', test: rk(4, 5) },
 ];
+// Display data for the Prison Security cards: a subtitle, the tools or gangs shown as chips, and the match rule.
+const PSYM = { S: '🌙', C: '🪼', H: '🔥', D: '🍭' };
+const blend = (hex, a, bg) => { const h = hex.replace('#', ''); const c = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); return '#' + c.map((v, i) => Math.round(a * v + (1 - a) * bg[i]).toString(16).padStart(2, '0')).join(''); };
+const SEC_CFG = {
+  red: { sub: 'CELL BLOCK NORTH', gangs: ['H', 'D'], join: 'OR', size: 'lg' }, black: { sub: 'CELL BLOCK SOUTH', gangs: ['S', 'C'], join: 'OR', size: 'lg' },
+  low: { sub: 'LOCKS · SHARPS · CUTTERS', tools: [1, 2, 6, 4, 5, 7, 9], size: 'sm' }, high: { sub: 'CLIMB · SMASH · DIG', tools: [8, 10, 11, 12, 3, 13], size: 'sm' },
+  odd: { sub: 'NO NOISE', tools: [1, 2, 3, 4, 8, 9], size: 'sm' }, even: { sub: 'MAKES A RACKET', tools: [5, 6, 7, 10, 11, 12, 13], size: 'sm' },
+  heart: { sub: 'ONE WHOLE GANG', gangs: ['H'], size: 'lg' }, diamond: { sub: 'ONE WHOLE GANG', gangs: ['D'], size: 'lg' },
+  spade: { sub: 'ONE WHOLE GANG', gangs: ['S'], size: 'lg' }, club: { sub: 'ONE WHOLE GANG', gangs: ['C'], size: 'lg' },
+  face: { sub: 'THE BIG HITTERS', tools: [11, 12, 13], size: 'md' }, a23: { sub: 'THE DOOR OPENERS', tools: [1, 2, 6], size: 'md' },
+  qk: { sub: 'TUNNEL TOOLS', tools: [13, 3], join: 'OR', size: 'lg' }, aj: { sub: 'BRUTE FORCE', tools: [11, 12], join: 'OR', size: 'lg' },
+  c89: { sub: 'OVER THE WALL', tools: [8, 10], join: 'OR', size: 'lg' }, c67: { sub: 'SNIP AND SAW', tools: [7, 9], join: 'OR', size: 'lg' },
+  c45: { sub: 'SMALL AND POINTY', tools: [4, 5], join: 'OR', size: 'lg' },
+};
+PRISON_SEC.forEach((x) => {
+  const c = SEC_CFG[x.key];
+  x.sub = c.sub; x.size = c.size; x.join = c.join || '';
+  x.title = c.gangs && c.gangs.length === 1 ? 'THE ' + x.name : x.name;
+  x.chips = c.gangs ? c.gangs.map((g) => ({ icon: PSYM[g], label: GANGS[g].name.toUpperCase(), color: GANGS[g].color, bg: GANGS[g].bg, dbg: blend(GANGS[g].color, 0.2, [10, 16, 28]) }))
+    : c.tools.map((r) => ({ icon: TOOLS[r - 1].icon, label: (c.size === 'lg' ? TOOLS[r - 1].name : TOOLS[r - 1].short).toUpperCase() }));
+  x.rule = c.gangs ? (c.gangs.length === 2 ? 'ANY CARD FROM EITHER GANG' : 'ANY ' + GANGS[c.gangs[0]].name.toUpperCase() + ' CARD')
+    : c.tools.length === 2 ? 'EITHER OF THESE TWO' : c.tools.length === 3 ? 'ANY OF THESE 3 TOOLS' : 'ANY ' + x.name.replace(' TOOLS', '') + ' TOOL';
+});
 const PACKS = {
   standard: { id: 'standard', suitWord: 'suit', rankWord: 'rank', gang: null, tools: null,
     SYM: Object.assign({}, SYM), SUIT_NAME: Object.assign({}, SUIT_NAME), RANKS: RANKS.slice(), RANK_WORD: RANK_WORD.slice(), SEC: SEC.slice() },

@@ -44,11 +44,23 @@ function known(k, not) {
   if (parts.length) return '<span class="known has">' + parts.join('') + '</span>' + nt;
   return nt || '<span class="known none" title="No hints yet">?</span>';
 }
+const NLOCK = { easy: 1, medium: 2, hard: 3 };
+const LOCKSVG = '<svg viewBox="0 0 18 21" aria-hidden="true"><path d="M4.5 9.5V6.5a4.5 4.5 0 0 1 9 0v3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><rect x="1.5" y="9.5" width="15" height="10" rx="2.5" fill="currentColor"/></svg>';
+function locksHTML(level, cls) { let h = '<span class="locks ' + (cls || '') + '">'; for (let i = 0; i < 3; i++) h += '<span class="lk' + (i < NLOCK[level] ? ' on' : '') + '">' + LOCKSVG + '</span>'; return h + '</span>'; }
+function chipsHTML(sec, dark) {
+  return '<div class="chips2 ' + sec.size + '">' + sec.chips.map((c, i) => (i && sec.join ? '<em>' + sec.join + '</em>' : '') +
+    '<span class="chip2' + (c.color ? ' gang' : '') + '"' + (c.color ? ' style="border-color:' + c.color + ';background:' + (dark ? c.dbg : c.bg) + '"' : '') + '><b>' + c.icon + '</b><u>' + esc(c.label) + '</u></span>').join('') + '</div>';
+}
 function secUp(sec) {
+  if (prison()) return '<div class="sec up pr"><div class="ph"><span>ESCAPE PLAN</span>' + locksHTML(sec.level) + '</div><div class="pt"><small>' + esc(sec.sub) + '</small><span class="nm"' + nmFit(sec.title, 7) + '>' + esc(sec.title) + '</span></div>' +
+    '<div class="pm">' + chipsHTML(sec, false) + '</div><div class="pf"><span class="lvp">' + sec.level.toUpperCase() + '</span></div></div>';
   return '<div class="sec up"><span class="pill">ESCAPE PLAN</span><span class="nm"' + nmFit(sec.name, 7.5) + '>' + esc(sec.name) + '</span>' +
     '<div class="match"><i>MATCH:</i>' + esc(sec.text) + '</div><span class="lvl ' + sec.level + '">' + LEVEL[sec.level] + '</span></div>';
 }
+function patBars(level) { const n = { easy: 3, medium: 2, hard: 1 }[level]; return '<span class="bars">' + [0, 1, 2].map((i) => '<i' + (i < n ? ' class="on"' : '') + '></i>').join('') + '</span>'; }
 function patUp(sec, cls, attrs) {
+  if (prison()) return '<div class="pat pr ' + (cls || '') + '" ' + (attrs || '') + '><span class="pill">GUARD PATROL</span><span class="not">NOT</span><span class="nm"' + nmFit(sec.title, 8) + '>' + esc(sec.title) + '</span>' +
+    '<div class="dn">' + chipsHTML(sec, true) + '</div></div>';
   return '<div class="pat ' + (cls || '') + '" ' + (attrs || '') + '><span class="pill">GUARD CHECK</span><span class="nm"' + nmFit('NOT ' + shortOf(sec), 8.5) + '>NOT ' + esc(shortOf(sec)) + '</span>' +
     '<div class="dn">DO NOT MATCH: ' + esc(sec.text) + '</div></div>';
 }
@@ -113,13 +125,13 @@ function planHTML() {
   const mini = (O, i, st) => {
     const lvl = LV3[O.sec.level];
     if (st === 'done') return '<div class="mo done" title="Cleared"><b>' + esc(shortOf(O.sec)) + '</b><span>✓</span></div>';
-    return '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + '"><i>' + (i + 1) + '</i><b>' + (O.faceUp ? esc(shortOf(O.sec)) : lvl) + '</b><span>' + (O.faceUp ? lvl : 'locked') + '</span></div>';
+    return '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + '"><i>' + (i + 1) + '</i><b>' + (O.faceUp ? esc(shortOf(O.sec)) : lvl) + '</b>' + (prison() ? locksHTML(O.sec.level, 'tiny') : '') + '<span>' + (O.faceUp ? lvl : 'locked') + '</span></div>';
   };
   const big = (O, i, tag, active) => '<div class="obs ' + (active ? 'active' : '') + '"><span class="tagline">' + (i + 1) + ' · ' + tag + '</span>' +
-    (O.faceUp ? secUp(O.sec) : '<div class="sec down ' + O.sec.level + '"><small>LOCK SECURITY LEVEL</small><b>' + LEVEL[O.sec.level] + '</b></div>') + '</div>';
+    (O.faceUp ? secUp(O.sec) : '<div class="sec down ' + O.sec.level + (prison() ? ' pr' : '') + '"><small>' + (prison() ? 'ESCAPE PLAN' : 'LOCK SECURITY LEVEL') + '</small>' + (prison() ? locksHTML(O.sec.level, 'big') : '') + '<b>' + LEVEL[O.sec.level] + '</b></div>') + '</div>';
   const cur = G.cur, n = G.obstacles.length;
   if (G.phase === 'direction') {
-    const tiles = G.obstacles.map((O) => '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + ' path"><b>' + (O.faceUp ? esc(shortOf(O.sec)) : LV3[O.sec.level]) + '</b><span>' + (O.faceUp ? LV3[O.sec.level] : 'locked') + '</span></div>').join('<span class="arrow">\u203a</span>');
+    const tiles = G.obstacles.map((O) => '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + ' path"><b>' + (O.faceUp ? esc(shortOf(O.sec)) : LV3[O.sec.level]) + '</b>' + (prison() ? locksHTML(O.sec.level, 'tiny') : '') + '<span>' + (O.faceUp ? LV3[O.sec.level] : 'locked') + '</span></div>').join('<span class="arrow">\u203a</span>');
     return '<section class="panel"><h2>Escape plan <small>direction not chosen yet</small></h2><div class="pathrow">' + tiles + '</div><div class="pathends"><span>\u2190 left end</span><span>right end \u2192</span></div></section>';
   }
   let html = '<div class="focusrow">';
@@ -277,6 +289,7 @@ function cardsDialogHTML() {
   const plan = ui.cardSide === 'plan';
   const PL = A.PATROL_LABEL;
   const face = (sec) => plan ? secUp(sec) :
+    prison() ? '<div class="pat pr full"><div class="ph"><span>GUARD PATROL</span><svg viewBox="0 0 22 16"><path d="M1 8c3-5 7-6.5 10-6.5S18 3 21 8c-3 5-7 6.5-10 6.5S4 13 1 8z" fill="none" stroke="#F0E442" stroke-width="1.8"/><circle cx="11" cy="8" r="3.2" fill="#F0E442"/></svg></div><div class="pt"><span class="not">NOT</span><span class="nm"' + nmFit(sec.title, 7) + '>' + esc(sec.title) + '</span><small>' + esc(sec.sub) + '</small></div><div class="pm">' + chipsHTML(sec, true) + '</div><div class="pf">' + patBars(sec.level) + '<span class="plv2">' + PL[sec.level].toUpperCase() + '</span></div></div>' :
     '<div class="pat full"><span class="pill">GUARD CHECK</span><span class="nm"' + nmFit('NOT ' + shortOf(sec), 8.5) + '>NOT ' + esc(shortOf(sec)) + '</span><div class="dn">DO NOT MATCH: ' + esc(sec.text) + '</div><span class="plv ' + sec.level + '">' + PL[sec.level] + '</span></div>';
   const groups = ['easy', 'medium', 'hard'].map((lv) => '<h3 class="lvh ' + lv + '">' + LEVEL[lv] + ' locks · ' + A.SEC.filter((x) => x.level === lv).length + ' cards</h3><div class="cardgrid">' +
     A.SEC.filter((x) => x.level === lv).map((x) => '<div class="cc ' + (plan ? 'plan' : 'patrol') + '">' + face(x) + '</div>').join('') + '</div>').join('');
@@ -286,7 +299,7 @@ function cardsDialogHTML() {
     groups + '<button class="btn primary" data-act="closecards">Close</button></div></div></div>';
 }
 function dirDialogHTML() {
-  const cards = '<div class="dirrow cardsrow">' + G.obstacles.map((o) => '<div class="dt ' + o.sec.level + '"><small>LOCK</small><b>' + LV3[o.sec.level] + '</b></div>').join('') + '</div>';
+  const cards = '<div class="dirrow cardsrow">' + G.obstacles.map((o) => '<div class="dt ' + o.sec.level + '"><small>' + (prison() ? 'ESCAPE PLAN' : 'LOCK') + '</small>' + (prison() ? locksHTML(o.sec.level, 'tiny') : '') + '<b>' + LV3[o.sec.level] + '</b></div>').join('') + '</div>';
   const go = (v, title, sub) => '<button class="dirbtn go ' + v + '" data-act="dir" data-v="' + v + '"><span class="dirtitle">' + title + '</span><span class="dline"></span><small>' + sub + '</small></button>';
   return '<div class="overlay"><div class="dialog dirdlg"><div class="box"><h2 class="dh">Choose your escape direction</h2>' +
     '<p>You have checked the lock levels. The cards show the line of obstacles as laid out. Pick which end the crew breaks out from first.</p>' +
@@ -369,6 +382,7 @@ function coverHTML() {
 }
 
 function render() {
+  document.body.classList.toggle('prison', prison());
   const scroll = document.getElementById('log');
   const atBottom = !scroll || scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 30;
   if (!G) { app.innerHTML = headerHTML() + footHTML() + dialogHTML(); return; }
