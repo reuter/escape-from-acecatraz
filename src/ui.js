@@ -3,26 +3,36 @@
 const A = window.Ace, CPU = window.AceCPU;
 const app = document.getElementById('app');
 let G = null, timer = null;
-const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, showNot: false, cardsOpen: false, cardSide: 'plan', playMode: 'cpu', hot: false, handoff: null, pendingSummary: null, presenter: false, tour: null, lastEnd: {}, startLog: 0, sumOff: false, keepPlant: true, turnStart: 0 };
-try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist', 'summaries', 'plantPopup', 'showNot', 'playMode']) if (k in s) ui[k] = s[k]; } catch (e) {}
-const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist, summaries: ui.summaries, plantPopup: ui.plantPopup, showNot: ui.showNot, playMode: ui.playMode })); } catch (e) {} };
+const ui = { n: 2, extra: false, speed: 800, assist: false, dialog: 'setup', endSeen: false, sel: null, swapA: null, hintSel: null, reveal: null, flash: null, tray: false, notice: null, help: false, summary: null, options: false, logOpen: false, summaries: true, plantPopup: true, showNot: false, cardsOpen: false, cardSide: 'plan', playMode: 'cpu', deck: 'standard', hot: false, handoff: null, pendingSummary: null, presenter: false, tour: null, lastEnd: {}, startLog: 0, sumOff: false, keepPlant: true, turnStart: 0 };
+try { const s = JSON.parse(localStorage.getItem('ace.settings') || 'null'); if (s) for (const k of ['n', 'extra', 'speed', 'assist', 'summaries', 'plantPopup', 'showNot', 'playMode', 'deck']) if (k in s) ui[k] = s[k]; } catch (e) {}
+const save = () => { try { localStorage.setItem('ace.settings', JSON.stringify({ n: ui.n, extra: ui.extra, speed: ui.speed, assist: ui.assist, summaries: ui.summaries, plantPopup: ui.plantPopup, showNot: ui.showNot, playMode: ui.playMode, deck: ui.deck })); } catch (e) {} };
 
+A.setDeck(ui.deck);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const redSuit = (s) => s === 'H' || s === 'D';
-const symHTML = (s) => '<span class="' + (redSuit(s) ? 'rd' : '') + '">' + A.SYM[s] + '</span>';
+const prison = () => A.DECK.id === 'prison';
+const symHTML = (s) => prison() ? '<span style="color:' + A.GANGS[s].color + '">' + A.SYM[s] + '</span>' : '<span class="' + (redSuit(s) ? 'rd' : '') + '">' + A.SYM[s] + '</span>';
+const dk = (t) => prison() ? t.replace('its suit or its rank', 'its gang or its tool').replace('suit or rank', 'gang or tool') : t;
+const shortOf = (sec) => sec.short || sec.name;
+const nmFit = (txt, max) => txt.length > max ? ' style="zoom:' + Math.max(0.5, max / txt.length).toFixed(2) + '"' : '';
 const LEVEL = { easy: 'EASY', medium: 'MEDIUM', hard: 'HARD' };
 const LV3 = { easy: 'EASY', medium: 'MED', hard: 'HARD' }; // short labels for the small tiles
 
 function card(c, cls, attrs) {
+  if (prison()) {
+    const t = A.TOOLS[c.rank - 1];
+    return '<button class="pc pr g-' + c.suit + ' ' + (cls || '') + '" ' + (attrs || '') + ' aria-label="' + esc(A.label(c)) + '">' +
+      '<span class="gt">' + A.SYM[c.suit] + '</span><span class="ti">' + t.icon + '</span><span class="tn">' + t.short + '</span></button>';
+  }
   return '<button class="pc ' + (redSuit(c.suit) ? 'red ' : '') + (cls || '') + '" ' + (attrs || '') + ' aria-label="' + esc(A.label(c)) + '">' +
     '<span class="r">' + A.RANKS[c.rank - 1] + '</span><span class="s">' + A.SYM[c.suit] + '</span><span class="big">' + A.SYM[c.suit] + '</span></button>';
 }
 function back(cls, attrs) { return '<button class="pc back ' + (cls || '') + '" ' + (attrs || '') + ' aria-label="Face-down card"></button>'; }
-const SUITWORD = { HEART: 'H', DIAMOND: 'D', CLUB: 'C', SPADE: 'S' };
+const SUITKEY = { heart: 'H', diamond: 'D', club: 'C', spade: 'S' };
 function notTag(not) {
   return (not || []).map((key) => {
-    const nm = A.SEC.find((x) => x.key === key).name, st = SUITWORD[String(nm).toUpperCase()];
-    return '<span class="known not" title="Cannot be ' + esc(nm) + '"><em>✕</em>' + (st ? symHTML(st) : esc(nm)) + '</span>';
+    const sc = A.SEC.find((x) => x.key === key), nm = sc.name, st = SUITKEY[key];
+    return '<span class="known not" title="Cannot be ' + esc(nm) + '"><em>✕</em>' + (st ? symHTML(st) : esc(shortOf(sc))) + '</span>';
   }).join('');
 }
 function known(k, not) {
@@ -35,11 +45,11 @@ function known(k, not) {
   return nt || '<span class="known none" title="No hints yet">?</span>';
 }
 function secUp(sec) {
-  return '<div class="sec up"><span class="pill">ESCAPE PLAN</span><span class="nm">' + esc(sec.name) + '</span>' +
+  return '<div class="sec up"><span class="pill">ESCAPE PLAN</span><span class="nm"' + nmFit(sec.name, 7.5) + '>' + esc(sec.name) + '</span>' +
     '<div class="match"><i>MATCH:</i>' + esc(sec.text) + '</div><span class="lvl ' + sec.level + '">' + LEVEL[sec.level] + '</span></div>';
 }
 function patUp(sec, cls, attrs) {
-  return '<div class="pat ' + (cls || '') + '" ' + (attrs || '') + '><span class="pill">GUARD CHECK</span><span class="nm">NOT ' + esc(sec.name) + '</span>' +
+  return '<div class="pat ' + (cls || '') + '" ' + (attrs || '') + '><span class="pill">GUARD CHECK</span><span class="nm"' + nmFit('NOT ' + shortOf(sec), 8.5) + '>NOT ' + esc(shortOf(sec)) + '</span>' +
     '<div class="dn">DO NOT MATCH: ' + esc(sec.text) + '</div></div>';
 }
 
@@ -102,14 +112,14 @@ function planHTML() {
   const md = mode();
   const mini = (O, i, st) => {
     const lvl = LV3[O.sec.level];
-    if (st === 'done') return '<div class="mo done" title="Cleared"><b>' + esc(O.sec.name) + '</b><span>✓</span></div>';
-    return '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + '"><i>' + (i + 1) + '</i><b>' + (O.faceUp ? esc(O.sec.name) : lvl) + '</b><span>' + (O.faceUp ? lvl : 'locked') + '</span></div>';
+    if (st === 'done') return '<div class="mo done" title="Cleared"><b>' + esc(shortOf(O.sec)) + '</b><span>✓</span></div>';
+    return '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + '"><i>' + (i + 1) + '</i><b>' + (O.faceUp ? esc(shortOf(O.sec)) : lvl) + '</b><span>' + (O.faceUp ? lvl : 'locked') + '</span></div>';
   };
   const big = (O, i, tag, active) => '<div class="obs ' + (active ? 'active' : '') + '"><span class="tagline">' + (i + 1) + ' · ' + tag + '</span>' +
     (O.faceUp ? secUp(O.sec) : '<div class="sec down ' + O.sec.level + '"><small>LOCK SECURITY LEVEL</small><b>' + LEVEL[O.sec.level] + '</b></div>') + '</div>';
   const cur = G.cur, n = G.obstacles.length;
   if (G.phase === 'direction') {
-    const tiles = G.obstacles.map((O) => '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + ' path"><b>' + (O.faceUp ? esc(O.sec.name) : LV3[O.sec.level]) + '</b><span>' + (O.faceUp ? LV3[O.sec.level] : 'locked') + '</span></div>').join('<span class="arrow">\u203a</span>');
+    const tiles = G.obstacles.map((O) => '<div class="mo ' + (O.faceUp ? 'up' : 'down ' + O.sec.level) + ' path"><b>' + (O.faceUp ? esc(shortOf(O.sec)) : LV3[O.sec.level]) + '</b><span>' + (O.faceUp ? LV3[O.sec.level] : 'locked') + '</span></div>').join('<span class="arrow">\u203a</span>');
     return '<section class="panel"><h2>Escape plan <small>direction not chosen yet</small></h2><div class="pathrow">' + tiles + '</div><div class="pathends"><span>\u2190 left end</span><span>right end \u2192</span></div></section>';
   }
   let html = '<div class="focusrow">';
@@ -207,7 +217,7 @@ function controlsHTML() {
   const b = (act, name, key, sub) => {
     const l = L[key];
     const ok = l && l.ok;
-    const tip = TIPS[key] + (ok ? '' : ' \u2014 Unavailable now: ' + (l ? l.why : ''));
+    const tip = dk(TIPS[key]) + (ok ? '' : ' \u2014 Unavailable now: ' + (l ? l.why : ''));
     return '<button class="btn tip" data-act="' + act + '" data-tip="' + esc(tip) + '" ' + (ok ? '' : 'disabled') + '>' + name + '<small>' + esc(l && !l.ok ? l.why : sub) + '</small></button>';
   };
   const cancel = '<button class="btn sm" data-act="cancel">Cancel</button>';
@@ -223,8 +233,8 @@ function controlsHTML() {
       if (!ui.hintSel) return '<div class="prompt"><span>You passed the guard check. Point at a teammate’s card to give a hint.</span></div>';
       const T = G.players[ui.hintSel.to], sl = T.hand[ui.hintSel.hand], c = sl.card;
       return '<div class="prompt"><span>Tell ' + esc(T.name) + ' about card ' + (ui.hintSel.hand + 1) + ':</span><div class="hintbtns">' +
-        '<button class="btn" data-act="hint-dim" data-dim="suit" ' + (sl.known.suit ? 'disabled' : '') + '>Its suit: ' + symHTML(c.suit) + ' ' + A.SUIT_NAME[c.suit] + '</button>' +
-        '<button class="btn" data-act="hint-dim" data-dim="rank" ' + (sl.known.rank ? 'disabled' : '') + '>Its rank: ' + A.RANK_WORD[c.rank - 1] + '</button></div></div>';
+        '<button class="btn" data-act="hint-dim" data-dim="suit" ' + (sl.known.suit ? 'disabled' : '') + '>Its ' + A.DECK.suitWord + ': ' + symHTML(c.suit) + ' ' + A.SUIT_NAME[c.suit] + '</button>' +
+        '<button class="btn" data-act="hint-dim" data-dim="rank" ' + (sl.known.rank ? 'disabled' : '') + '>Its ' + A.DECK.rankWord + ': ' + (prison() ? A.RANKS[c.rank - 1] + ' ' : '') + A.RANK_WORD[c.rank - 1] + '</button></div></div>';
     }
     case 'patrol': return '<div class="prompt"><span>Pick a patrol card from the discard to shuffle back into the patrol deck.</span></div>';
     case 'swapA': return '<div class="prompt"><span>Riot! Swap any two cards. Pick the first: a card in any hand (yours or a teammate\u2019s) or in the discard pile.</span></div>';
@@ -242,19 +252,32 @@ function logHTML() {
   return '<aside><section class="panel"><h2>Log</h2><div class="log" id="log">' + G.log.map((l) => '<div class="' + (!ui.hot && l.p === 0 ? 'me' : l.p == null ? 'sys' : '') + '">' + esc(l.text) + '</div>').join('') + '</div></section></aside>';
 }
 
+function prisonPage() {
+  const td = 'padding:3px 6px;border-bottom:1px solid #d5dbe4;font-size:9pt;text-align:left;vertical-align:top';
+  const gang = ['H', 'D', 'S', 'C'].map((k) => { const g = A.GANGS[k]; return '<tr><td style="' + td + ';font-weight:800;color:' + g.color + '">' + A.SYM[k] + ' The ' + g.name + '</td><td style="' + td + '">' + g.block + ' Block</td></tr>'; }).join('');
+  const tool = A.TOOLS.map((t, i) => '<tr><td style="' + td + ';font-size:12pt">' + t.icon + '</td><td style="' + td + ';font-weight:800">' + t.name + '</td><td style="' + td + '">' + t.size + '</td><td style="' + td + '">' + t.noise + '</td></tr>').join('');
+  const sec = ['easy', 'medium', 'hard'].map((lv) => '<tr><td colspan="2" style="' + td + ';font-weight:900;letter-spacing:.1em;text-transform:uppercase;background:#eaf3ee">' + lv + ' · ' + A.SEC.filter((x) => x.level === lv).length + ' cards</td></tr>' +
+    A.SEC.filter((x) => x.level === lv).map((x) => '<tr><td style="' + td + ';font-weight:800;white-space:nowrap">' + x.name + '</td><td style="' + td + '">' + x.text + '</td></tr>').join('')).join('');
+  return '<div class="page"><div class="hd"><h2>Prison deck edition</h2><small>Standalone deck</small></div>' +
+    '<div class="box"><p>The standalone edition replaces the standard 52-card deck with 52 Prison cards: <b>4 Prison Gangs × 13 Tools</b>. The rules do not change. A gang is a suit and a tool is a rank, so hints name a <b>gang</b> or a <b>tool</b>. The Security cards name gangs, cell blocks and tool families instead of suits, colours and numbers.</p></div>' +
+    '<div style="display:flex;gap:12px;align-items:flex-start"><div class="box" style="flex:1"><h3>Gangs</h3><table style="border-collapse:collapse;width:100%">' + gang + '</table>' +
+    '<h3 style="margin-top:8px">Tools</h3><table style="border-collapse:collapse;width:100%"><tr><td style="' + td + '"></td><td style="' + td + ';font-weight:900">Tool</td><td style="' + td + ';font-weight:900">Size</td><td style="' + td + ';font-weight:900">Noise</td></tr>' + tool + '</table></div>' +
+    '<div class="box" style="flex:1.25"><h3>The 17 Security cards</h3><table style="border-collapse:collapse;width:100%">' + sec + '</table></div></div>' +
+    '<div class="foot"><span>Escape from Ace-catraz · Prison deck</span><span>7</span></div></div>';
+}
 function helpHTML() {
   // The rulebook is the same document as the printable PDF, shown page by page in a framed viewer.
   return '<div class="overlay rbover"><div class="rbdlg" role="dialog" aria-label="How to play">' +
     '<div class="rbbar"><b>How to play</b><span class="rbbtns"><a class="btn sm" href="Escape_from_Ace-catraz_Rules.pdf" target="_blank" rel="noopener">Printable PDF</a>' +
     '<button class="btn sm primary" data-act="closehelp">' + (G ? 'Back to the game' : 'Close') + '</button></span></div>' +
-    '<iframe class="rbframe" title="Escape from Ace-catraz rules" srcdoc="' + esc(window.RULEBOOK_HTML) + '"></iframe></div></div>';
+    '<iframe class="rbframe" title="Escape from Ace-catraz rules" srcdoc="' + esc(window.RULEBOOK_HTML + (prison() ? prisonPage() : '')) + '"></iframe></div></div>';
 }
 
 function cardsDialogHTML() {
   const plan = ui.cardSide === 'plan';
   const PL = A.PATROL_LABEL;
   const face = (sec) => plan ? secUp(sec) :
-    '<div class="pat full"><span class="pill">GUARD CHECK</span><span class="nm">NOT ' + esc(sec.name) + '</span><div class="dn">DO NOT MATCH: ' + esc(sec.text) + '</div><span class="plv ' + sec.level + '">' + PL[sec.level] + '</span></div>';
+    '<div class="pat full"><span class="pill">GUARD CHECK</span><span class="nm"' + nmFit('NOT ' + shortOf(sec), 8.5) + '>NOT ' + esc(shortOf(sec)) + '</span><div class="dn">DO NOT MATCH: ' + esc(sec.text) + '</div><span class="plv ' + sec.level + '">' + PL[sec.level] + '</span></div>';
   const groups = ['easy', 'medium', 'hard'].map((lv) => '<h3 class="lvh ' + lv + '">' + LEVEL[lv] + ' locks · ' + A.SEC.filter((x) => x.level === lv).length + ' cards</h3><div class="cardgrid">' +
     A.SEC.filter((x) => x.level === lv).map((x) => '<div class="cc ' + (plan ? 'plan' : 'patrol') + '">' + face(x) + '</div>').join('') + '</div>').join('');
   return '<div class="overlay"><div class="dialog cards"><div class="box"><div class="cardshead"><h2 class="dh">All 17 security cards</h2>' +
@@ -304,6 +327,7 @@ function dialogHTML() {
   if (ui.dialog === 'setup') {
     const segM = [['cpu', 'You vs CPU crew'], ['hot', 'Hotseat (pass and play)']].map((d) => '<button data-act="setmode" data-v="' + d[0] + '" aria-pressed="' + (ui.playMode === d[0]) + '">' + d[1] + '</button>').join('');
     const hotM = ui.playMode === 'hot';
+    const segD = [['standard', 'Standard 52-card deck'], ['prison', 'Prison deck']].map((d) => '<button data-act="setdeck" data-v="' + d[0] + '" aria-pressed="' + (ui.deck === d[0]) + '">' + d[1] + '</button>').join('');
     const segN = [2, 3, 4].map((n) => '<button data-act="setn" data-v="' + n + '" aria-pressed="' + (ui.n === n) + '">' + n + ' players</button>').join('');
     const obs = { 2: 8, 3: 5, 4: 3 }[ui.n] + (ui.extra ? 1 : 0);
     const fan = [[1, 'S'], [12, 'H'], [1, 'D'], [11, 'C'], [13, 'S']].map((c, k) => '<div class="fc" style="transform:rotate(' + (k - 2) * 9 + 'deg) translateY(' + Math.abs(k - 2) * 4 + 'px)">' + card({ rank: c[0], suit: c[1] }, '', 'tabindex="-1"') + '</div>').join('');
@@ -311,7 +335,7 @@ function dialogHTML() {
       '<div class="hero"><h2 data-act="badge">Escape from <span class="tag">Ace-catraz!</span></h2><div class="fan">' + fan + '</div>' +
       '<div class="crew">' + [0, 1, 2, 3].map((k) => avatar(k, 44)).join('') + '</div>' +
       '<p>' + (hotM ? 'Pass the device between turns. Everyone sees their crewmates’ cards but never their own.' : 'You are Ace. You can see every crewmate’s cards but never your own.') + '</p><p class="demobadge">Playable demo by Andy Serwatuk · Feedback or publishing inquiries: games@serwatuk.ca</p></div>' +
-      '<div class="box"><div class="field"><b>Play mode</b><div class="seg">' + segM + '</div>' + (hotM ? '<p class="note">No CPU players. A cover screen hides every hand between turns.</p>' : '') + '</div><div class="field"><b>Crew size</b><div class="seg">' + segN + '</div><p class="note">' + obs + ' obstacles, ' + (ui.n - 1) + ' extra HARD card' + (ui.n > 2 ? 's' : '') + ' shuffled in</p></div>' +
+      '<div class="box"><div class="field"><b>Cards</b><div class="seg">' + segD + '</div><p class="note">' + (ui.deck === 'prison' ? 'Standalone edition: 4 Prison Gangs × 13 Tools. Same rules, new cards.' : 'Add-on edition: any standard 52-card deck plus the 18 Security cards.') + '</p></div><div class="field"><b>Play mode</b><div class="seg">' + segM + '</div>' + (hotM ? '<p class="note">No CPU players. A cover screen hides every hand between turns.</p>' : '') + '</div><div class="field"><b>Crew size</b><div class="seg">' + segN + '</div><p class="note">' + obs + ' obstacles, ' + (ui.n - 1) + ' extra HARD card' + (ui.n > 2 ? 's' : '') + ' shuffled in</p></div>' +
       '<label class="check"><input type="checkbox" data-act="extra" ' + (ui.extra ? 'checked' : '') + '> Add one obstacle (harder, per the rules tip)</label>' +
       '<button class="btn primary" data-act="start">Start the escape</button><button class="btn" data-act="help">How to play</button></div></div></div>';
   }
@@ -459,7 +483,7 @@ function tourAdvance() {
 function tourHTML() {
   const T = ui.tour; if (!T || !G) return '';
   const st = TOUR[T.i];
-  return '<div class="tour"><div class="tourstep">Tour · step ' + (T.i + 1) + ' of ' + TOUR.length + '</div><p>' + esc(st.t) + '</p><div class="tourrow">' +
+  return '<div class="tour"><div class="tourstep">Tour · step ' + (T.i + 1) + ' of ' + TOUR.length + '</div><p>' + esc(dk(st.t)) + '</p><div class="tourrow">' +
     '<button class="btn sm" data-act="tourquit">' + (st.last ? 'Close' : 'End tour') + '</button>' +
     (st.last ? '' : '<button class="btn sm primary" data-act="tournext">' + (st.when ? 'Skip step' : 'Next') + '</button>') + '</div></div>';
 }
@@ -476,6 +500,7 @@ function tourAfterRender() {
 let badgeTaps = [];
 
 function startGame() {
+  A.setDeck(ui.deck);
   ui.hot = ui.playMode === 'hot'; ui.handoff = null; ui.pendingSummary = null; ui.lastEnd = {};
   const human = ui.hot ? [true, true, true, true] : [true, false, false, false];
   G = A.newGame({ n: ui.n, extra: ui.extra, human });
@@ -494,6 +519,7 @@ document.addEventListener('click', (e) => {
     case 'starttour': startTour(); return;
     case 'tournext': if (ui.tour) { ui.tour.i = Math.min(TOUR.length - 1, ui.tour.i + 1); render(); } return;
     case 'tourquit': ui.tour = null; render(); return;
+    case 'setdeck': ui.deck = d.v; A.setDeck(ui.deck); save(); render(); return;
     case 'setmode': ui.playMode = d.v; save(); render(); return;
     case 'ready': ui.handoff = null; ui.summary = ui.pendingSummary; ui.pendingSummary = null; render(); schedule(); return;
     case 'setn': ui.n = +d.v; render(); return;

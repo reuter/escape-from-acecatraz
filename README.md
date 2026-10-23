@@ -51,3 +51,10 @@ The pitch position is a recorded seed plus action list in `src/demo.js` (replaye
 ## Offline use
 
 The page has no external requests (the font is embedded). On the hosted copy, open it once while online: a service worker caches the game, and it then works with no connection, including `?demo` and `?tour`. On a tablet, use the browser menu's "Install app" or "Add to Home screen" for a full-screen launcher. Updates are picked up automatically the next time it is opened online.
+
+## Two decks
+
+The setup screen has a **Cards** switch:
+
+- **Standard 52-card deck** (add-on edition): suits and ranks, plus the 18 Security cards.
+- **Prison deck** (standalone edition): 4 Prison Gangs x 13 Tools. Same rules. A gang is a suit and a tool is a rank, so hints name a gang or a tool. The 17 Security cards name gangs, cell blocks and tool families.

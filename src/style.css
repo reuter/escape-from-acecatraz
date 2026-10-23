@@ -418,3 +418,17 @@ html, body { max-width: 100%; overflow-x: clip; }
 .sec .lvl.easy { background: #6ee7b7; border-color: #065f46; color: #064e3b; }
 .sec .lvl.medium { background: #ffd98a; border-color: #8a5a00; color: #5c3b00; }
 .sec .lvl.hard { background: #ffb4b4; border-color: #8a1d1d; color: #6b0f0f; }
+
+/* ---- Prison deck: gang colours and tool faces ---- */
+.g-S { --gc: #2f6fd0; --gb: #e4eefc; } .g-C { --gc: #7a4fd1; --gb: #eee7fb; } .g-H { --gc: #d1334a; --gb: #fde6ea; } .g-D { --gc: #d9890a; --gb: #fdf0d9; }
+.pc.pr { color: var(--gc); border: 2px solid var(--gc); border-top-width: 6px; background: linear-gradient(var(--gb), #fff 55%); font-family: inherit; }
+.pc.pr .gt { position: absolute; left: 4px; top: 1px; font-size: 13px; font-weight: 900; line-height: 1; }
+.pc.pr .ti { position: absolute; inset: 0; display: grid; place-items: center; font-size: 25px; padding: 4px 0 10px; line-height: 1; }
+.pc.pr .tn { position: absolute; left: 0; right: 0; bottom: 3px; text-align: center; font-size: 7.5px; font-weight: 900; letter-spacing: .02em; line-height: 1; }
+.pc.pr.mini .tn { display: none; } .pc.pr.mini .ti { font-size: 18px; padding: 8px 0 0; } .pc.pr.mini .gt { font-size: 10px; top: 0; left: 3px; }
+.pc.pr.xl .gt { font-size: 28px; left: 9px; top: 4px; } .pc.pr.xl .ti { font-size: 58px; padding-bottom: 20px; } .pc.pr.xl .tn { font-size: 15px; bottom: 9px; }
+.pc.pr.pilec .ti { font-size: 28px; } .pc.pr.pilec .tn { font-size: 8.5px; }
+.seat .pc.pr .ti { font-size: 23px; } .me .pc.pr .ti { font-size: 28px; } .me .pc.pr .tn { font-size: 8.5px; }
+.fan .pc.pr .ti { font-size: 30px; } .fan .pc.pr .tn { font-size: 9px; }
+@media (max-width: 560px) { .seat .pc.pr .ti { font-size: 18px; padding-bottom: 8px; } .seat .pc.pr .tn { font-size: 6px; } .seat .pc.pr .gt { font-size: 10px; } }
+.seat .known .rd { color: inherit; }

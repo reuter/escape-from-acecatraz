@@ -10,7 +10,7 @@ const RANK_WORD = ['Ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 
 
 const CARDS = [];
 for (let s = 0; s < 4; s++) for (let r = 1; r <= 13; r++) CARDS.push({ id: s * 13 + r - 1, suit: SUITS[s], rank: r });
-const label = (c) => RANKS[c.rank - 1] + SYM[c.suit];
+const label = (c) => (DECK.id === 'prison' ? TOOLS[c.rank - 1].icon + ' ' + TOOLS[c.rank - 1].name + ' ' + SYM[c.suit] : RANKS[c.rank - 1] + SYM[c.suit]);
 const idOf = (suit, rank) => SUITS.indexOf(suit) * 13 + rank - 1;
 
 // The 17 security cards. `text` is the MATCH line printed on the card.
@@ -34,6 +34,60 @@ const SEC = [
   { key: 'c45', name: '4 OR 5', level: 'hard', text: '4 OR 5', test: (c) => c.rank === 4 || c.rank === 5 },
 ];
 const PATROL_LABEL = { easy: 'EXTREME CAUTION', medium: 'MEDIUM', hard: 'RELAXED' };
+
+// ---- Deck packs: the same 4 x 13 card structure, dressed two ways ----------------------------------
+// 'standard' = an ordinary 52-card deck (suits and ranks). 'prison' = the standalone deck: 4 Prison Gangs x 13 Tools.
+// Rank 1..13 and suit S/H/D/C stay the internal identity, so every rule, hint and CPU decision is identical.
+const DECK = { id: 'standard', suitWord: 'suit', rankWord: 'rank', gang: null, tools: null };
+const T = (name, short, icon, size, noise) => ({ name, short, icon, size, noise });
+const TOOLS = [
+  T('Bobby Pin', 'PIN', '🧷', 'pocket', 'quiet'), T('Paperclip', 'CLIP', '📎', 'pocket', 'quiet'), T('Spoon', 'SPOON', '🥄', 'pocket', 'quiet'),
+  T('Shiv', 'SHIV', '🪥', 'pocket', 'quiet'), T('Nail File', 'FILE', '💅', 'pocket', 'loud'), T('Stolen Key', 'KEY', '🔑', 'pocket', 'loud'),
+  T('Hacksaw', 'HACKSAW', '🪚', 'pocket', 'loud'), T('Bedsheet Rope', 'ROPE', '🪢', 'big', 'quiet'), T('Bolt Cutter', 'CUTTER', '✂️', 'big', 'quiet'),
+  T('Grappling Hook', 'HOOK', '🪝', 'big', 'loud'), T('Crowbar', 'CROWBAR', '🔧', 'big', 'loud'), T('Sledgehammer', 'SLEDGE', '🔨', 'big', 'loud'),
+  T('Pickaxe', 'PICKAXE', '⛏️', 'big', 'loud'),
+];
+const GANGS = {
+  S: { name: 'Diggers', color: '#2f6fd0', bg: '#e4eefc', block: 'South' },
+  C: { name: 'Knuckles', color: '#7a4fd1', bg: '#eee7fb', block: 'South' },
+  H: { name: 'Heartbreakers', color: '#d1334a', bg: '#fde6ea', block: 'North' },
+  D: { name: 'Diamond Dogs', color: '#d9890a', bg: '#fdf0d9', block: 'North' },
+};
+const ic = (...r) => r.map((k) => TOOLS[k - 1].icon).join(' ');
+const rk = (...r) => (c) => r.indexOf(c.rank) >= 0;
+const PRISON_SEC = [
+  { key: 'red', name: 'NORTH BLOCK', short: 'NORTH', level: 'easy', text: 'HEARTBREAKERS ♥ OR DIAMOND DOGS ♦', test: (c) => c.suit === 'H' || c.suit === 'D' },
+  { key: 'black', name: 'SOUTH BLOCK', short: 'SOUTH', level: 'easy', text: 'DIGGERS ♠ OR KNUCKLES ♣', test: (c) => c.suit === 'S' || c.suit === 'C' },
+  { key: 'low', name: 'POCKET TOOLS', short: 'POCKET', level: 'easy', text: 'SMALL ENOUGH TO HIDE: ' + ic(1, 2, 3, 4, 5, 6, 7), test: (c) => c.rank <= 7 },
+  { key: 'high', name: 'BIG TOOLS', short: 'BIG', level: 'easy', text: 'TOO BIG TO HIDE: ' + ic(8, 9, 10, 11, 12, 13), test: (c) => c.rank >= 8 },
+  { key: 'odd', name: 'QUIET TOOLS', short: 'QUIET', level: 'easy', text: 'NO NOISE: ' + ic(1, 2, 3, 4, 8, 9), test: rk(1, 2, 3, 4, 8, 9) },
+  { key: 'even', name: 'LOUD TOOLS', short: 'LOUD', level: 'easy', text: 'MAKES A RACKET: ' + ic(5, 6, 7, 10, 11, 12, 13), test: rk(5, 6, 7, 10, 11, 12, 13) },
+  { key: 'heart', name: 'HEARTBREAKERS', short: 'HEARTS', level: 'medium', text: 'THE HEARTBREAKERS ♥', test: (c) => c.suit === 'H' },
+  { key: 'diamond', name: 'DIAMOND DOGS', short: 'DOGS', level: 'medium', text: 'THE DIAMOND DOGS ♦', test: (c) => c.suit === 'D' },
+  { key: 'spade', name: 'DIGGERS', short: 'DIGGERS', level: 'medium', text: 'THE DIGGERS ♠', test: (c) => c.suit === 'S' },
+  { key: 'club', name: 'KNUCKLES', short: 'KNUCKLES', level: 'medium', text: 'THE KNUCKLES ♣', test: (c) => c.suit === 'C' },
+  { key: 'face', name: 'HEAVY HITTERS', short: 'HEAVY', level: 'medium', text: ic(11) + ' CROWBAR · ' + ic(12) + ' SLEDGEHAMMER · ' + ic(13) + ' PICKAXE', test: rk(11, 12, 13) },
+  { key: 'a23', name: 'TINY TOOLS', short: 'TINY', level: 'medium', text: ic(1) + ' BOBBY PIN · ' + ic(2) + ' PAPERCLIP · ' + ic(3) + ' SPOON', test: rk(1, 2, 3) },
+  { key: 'qk', name: 'DIG SET', short: 'DIG', level: 'hard', text: ic(13) + ' PICKAXE OR ' + ic(3) + ' SPOON', test: rk(3, 13) },
+  { key: 'aj', name: 'LOCKPICKS', short: 'PICKS', level: 'hard', text: ic(1) + ' BOBBY PIN OR ' + ic(2) + ' PAPERCLIP', test: rk(1, 2) },
+  { key: 'c89', name: 'CLIMBING GEAR', short: 'CLIMB', level: 'hard', text: ic(8) + ' ROPE OR ' + ic(10) + ' GRAPPLING HOOK', test: rk(8, 10) },
+  { key: 'c67', name: 'CUTTERS', short: 'CUTTERS', level: 'hard', text: ic(7) + ' HACKSAW OR ' + ic(9) + ' BOLT CUTTER', test: rk(7, 9) },
+  { key: 'c45', name: 'SHARPS', short: 'SHARPS', level: 'hard', text: ic(4) + ' SHIV OR ' + ic(5) + ' NAIL FILE', test: rk(4, 5) },
+];
+const PACKS = {
+  standard: { id: 'standard', suitWord: 'suit', rankWord: 'rank', gang: null, tools: null,
+    SYM: Object.assign({}, SYM), SUIT_NAME: Object.assign({}, SUIT_NAME), RANKS: RANKS.slice(), RANK_WORD: RANK_WORD.slice(), SEC: SEC.slice() },
+  prison: { id: 'prison', suitWord: 'gang', rankWord: 'tool', gang: GANGS, tools: TOOLS,
+    SYM: Object.assign({}, SYM), SUIT_NAME: { S: 'Diggers', C: 'Knuckles', H: 'Heartbreakers', D: 'Diamond Dogs' },
+    RANKS: TOOLS.map((t) => t.icon), RANK_WORD: TOOLS.map((t) => t.name), SEC: PRISON_SEC },
+};
+function setDeck(id) {
+  const D = PACKS[id] || PACKS.standard;
+  DECK.id = D.id; DECK.suitWord = D.suitWord; DECK.rankWord = D.rankWord; DECK.gang = D.gang; DECK.tools = D.tools;
+  Object.assign(SYM, D.SYM); Object.assign(SUIT_NAME, D.SUIT_NAME);
+  RANKS.splice(0, RANKS.length, ...D.RANKS); RANK_WORD.splice(0, RANK_WORD.length, ...D.RANK_WORD); SEC.splice(0, SEC.length, ...D.SEC);
+  return DECK;
+}
 
 function mulberry32(a) {
   return function () {
@@ -452,7 +506,7 @@ function endTurn(G) {
 }
 
 const api = {
-  SUITS, SYM, SUIT_NAME, RANKS, RANK_WORD, CARDS, SEC, PATROL_LABEL, NAMES,
+  SUITS, SYM, SUIT_NAME, RANKS, RANK_WORD, CARDS, SEC, PATROL_LABEL, NAMES, DECK, TOOLS, GANGS, setDeck,
   label, idOf, isExact, knownMatches, mulberry32, shuffle,
   newGame, sampleWorld, cloneWorld, apply, legal, active, alarmVisible, allPlanted, plantedBy, hasSwapOption,
   poolFor, handCandidates, modelPool, plantedCandidates,
