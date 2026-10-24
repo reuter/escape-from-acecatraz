@@ -43,10 +43,10 @@ const T = (name, short, icon, cat, noise) => ({ name, short, icon, cat, noise, z
 // Six tool categories (5 pairs + the Lock Set trio), grouped into two zones: Cell Work and Yard Work.
 const ZONE_OF = { 'Lock Set': 'Cell', Sharps: 'Cell', Cutters: 'Cell', 'Climbing Gear': 'Yard', Smashers: 'Yard', 'Dig Set': 'Yard' };
 const TOOLS = [
-  T('Bobby Pin', 'PIN', '🧷', 'Lock Set', 'quiet'), T('Paperclip', 'CLIP', '📎', 'Lock Set', 'quiet'), T('Spoon', 'SPOON', '🥄', 'Dig Set', 'quiet'),
-  T('Shiv', 'SHIV', '🪥', 'Sharps', 'quiet'), T('Nail File', 'FILE', '💅', 'Sharps', 'loud'), T('Stolen Key', 'KEY', '🔑', 'Lock Set', 'loud'),
-  T('Hacksaw', 'HACKSAW', '🪚', 'Cutters', 'loud'), T('Bedsheet Rope', 'ROPE', '🪢', 'Climbing Gear', 'quiet'), T('Bolt Cutter', 'CUTTER', '✂️', 'Cutters', 'quiet'),
-  T('Grappling Hook', 'HOOK', '🪝', 'Climbing Gear', 'loud'), T('Crowbar', 'CROWBAR', '🔧', 'Smashers', 'loud'), T('Sledgehammer', 'SLEDGE', '🔨', 'Smashers', 'loud'),
+  T('Safety Pin', 'PIN', '🧷', 'Lock Set', 'quiet'), T('Paperclip', 'CLIP', '📎', 'Lock Set', 'quiet'), T('Spoon', 'SPOON', '🥄', 'Dig Set', 'quiet'),
+  T('Shiv', 'SHIV', '🪥', 'Sharps', 'quiet'), T('Screwdriver', 'DRIVER', '🪛', 'Sharps', 'loud'), T('Stolen Key', 'KEY', '🔑', 'Lock Set', 'loud'),
+  T('Handsaw', 'SAW', '🪚', 'Cutters', 'loud'), T('Rope', 'ROPE', '🪢', 'Climbing Gear', 'quiet'), T('Scissors', 'SCISSORS', '✂️', 'Cutters', 'quiet'),
+  T('Ladder', 'LADDER', '🪜', 'Climbing Gear', 'loud'), T('Axe', 'AXE', '🪓', 'Smashers', 'loud'), T('Hammer', 'HAMMER', '🔨', 'Smashers', 'loud'),
   T('Pickaxe', 'PICKAXE', '⛏️', 'Dig Set', 'loud'),
 ];
 const GANGS = {
@@ -68,13 +68,13 @@ const PRISON_SEC = [
   { key: 'diamond', name: 'STICKY FINGERS', short: 'STICKY FINGERS', level: 'medium', text: 'THE STICKY FINGERS 🍭', test: (c) => c.suit === 'D' },
   { key: 'spade', name: 'NIGHT SHIFT', short: 'NIGHT SHIFT', level: 'medium', text: 'THE NIGHT SHIFT 🌙', test: (c) => c.suit === 'S' },
   { key: 'club', name: 'JELLY CREW', short: 'JELLY CREW', level: 'medium', text: 'THE JELLY CREW 🪼', test: (c) => c.suit === 'C' },
-  { key: 'face', name: 'HEAVY HITTERS', short: 'HEAVY', level: 'medium', text: ic(11) + ' CROWBAR · ' + ic(12) + ' SLEDGEHAMMER · ' + ic(13) + ' PICKAXE', test: rk(11, 12, 13) },
-  { key: 'a23', name: 'LOCK SET', short: 'LOCKS', level: 'medium', text: ic(1) + ' BOBBY PIN · ' + ic(2) + ' PAPERCLIP · ' + ic(6) + ' STOLEN KEY', test: rk(1, 2, 6) },
+  { key: 'face', name: 'HEAVY HITTERS', short: 'HEAVY', level: 'medium', text: ic(11) + ' AXE · ' + ic(12) + ' HAMMER · ' + ic(13) + ' PICKAXE', test: rk(11, 12, 13) },
+  { key: 'a23', name: 'LOCK SET', short: 'LOCKS', level: 'medium', text: ic(1) + ' SAFETY PIN · ' + ic(2) + ' PAPERCLIP · ' + ic(6) + ' STOLEN KEY', test: rk(1, 2, 6) },
   { key: 'qk', name: 'DIG SET', short: 'DIG', level: 'hard', text: ic(13) + ' PICKAXE OR ' + ic(3) + ' SPOON', test: rk(3, 13) },
-  { key: 'aj', name: 'SMASHERS', short: 'SMASH', level: 'hard', text: ic(11) + ' CROWBAR OR ' + ic(12) + ' SLEDGEHAMMER', test: rk(11, 12) },
-  { key: 'c89', name: 'CLIMBING GEAR', short: 'CLIMB', level: 'hard', text: ic(8) + ' ROPE OR ' + ic(10) + ' GRAPPLING HOOK', test: rk(8, 10) },
-  { key: 'c67', name: 'CUTTERS', short: 'CUTTERS', level: 'hard', text: ic(7) + ' HACKSAW OR ' + ic(9) + ' BOLT CUTTER', test: rk(7, 9) },
-  { key: 'c45', name: 'SHARPS', short: 'SHARPS', level: 'hard', text: ic(4) + ' SHIV OR ' + ic(5) + ' NAIL FILE', test: rk(4, 5) },
+  { key: 'aj', name: 'SMASHERS', short: 'SMASH', level: 'hard', text: ic(11) + ' AXE OR ' + ic(12) + ' HAMMER', test: rk(11, 12) },
+  { key: 'c89', name: 'CLIMBING GEAR', short: 'CLIMB', level: 'hard', text: ic(8) + ' ROPE OR ' + ic(10) + ' LADDER', test: rk(8, 10) },
+  { key: 'c67', name: 'CUTTERS', short: 'CUTTERS', level: 'hard', text: ic(7) + ' HANDSAW OR ' + ic(9) + ' SCISSORS', test: rk(7, 9) },
+  { key: 'c45', name: 'SHARPS', short: 'SHARPS', level: 'hard', text: ic(4) + ' SHIV OR ' + ic(5) + ' SCREWDRIVER', test: rk(4, 5) },
 ];
 // Display data for the Prison Security cards: a subtitle, the tools or gangs shown as chips, and the match rule.
 const PSYM = { S: '🌙', C: '🪼', H: '🔥', D: '🍭' };
